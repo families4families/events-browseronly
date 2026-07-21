@@ -75,63 +75,102 @@
     section.search-results-block {
         display: flex;
         flex-direction: column;
-        align-content: flex-start;
-        width: 500px;
-        min-width: 150px;
-        max-width: 90%;
-        gap: 20px;
+        gap: 12px;
+        width: 100%;
+        max-width: 420px;
     }
 
-    section.search-results-block div.f4f-client-card {
+    div.f4f-client-card {
         width: 100%;
-        min-width: 500px;
-        padding: 10px;
-        border-color: black;
-        border-style: solid;
-        border-radius: 25px;
-        border-width: 1px;
-        border-spacing: 10px;
+        box-sizing: border-box;
+        padding: 16px 20px;
+        border: 1px solid #D8D8D8;
+        border-radius: 12px;
+        background-color: transparent;
 
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
     }
 
-    section.search-results-block .f4f-family-name {
-        display: inline-block;
-        margin: 10px 10px 10px 15px; /* top right bottom left */
-        font-weight: bold;
+    div.f4f-client-card .f4f-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
     }
 
-    section.search-results-block div.f4f-client-card table.f4f-family-members {
-        width: 100%;
-        max-width: 100%;
-        padding-left: 10px;
-        padding-right: 20px;
-        padding-top: 10px;
-        padding-bottom: 10px;
-
-        border-spacing: 10px;
-        white-space: pre-wrap;
+    div.f4f-client-card .f4f-family-name {
+        font-weight: 600;
+        font-size: 16px;
     }
 
-    section.search-results-block div.f4f-client-card table.f4f-family-members td {
-        padding-right: 10px;
+    .f4f-selected-check {
+        display: none;
+        vertical-align: -3px;
+        margin-right: 4px;
+        color: #378ADD;
     }
+
+    div.f4f-client-card .f4f-member-count {
+        font-size: 12px;
+        color: #0C447C;
+        background-color: #E6F1FB;
+        padding: 2px 10px;
+        border-radius: 4px;
+        white-space: nowrap;
+    }
+
+    div.f4f-family-members {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    div.f4f-family-member-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+    }
+
+    div.f4f-family-member-row .f4f-member-name {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: break-word;
+    }
+
+    div.f4f-family-member-row .f4f-member-detail {
+        color: #666666;
+        white-space: nowrap;
+    }
+
+    .f4f-gender-icon {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+    }
+
+    /* male=blue, female=pink, non-binary=purple (a blend of the two),
+       agender/unspecified stays muted/gray - same as before this redesign */
+    .gender-male .f4f-gender-icon { color: #378ADD; }
+    .gender-female .f4f-gender-icon { color: #D4537E; }
+    .gender-nonbinary .f4f-gender-icon { color: #7F77DD; }
+    .gender-other .f4f-gender-icon { color: #999999; }
 
     button.sponsor-button {
-        margin: 30px 10px 10px 10px; /* top right bottom left */
+        width: 100%;
+        box-sizing: border-box;
         padding: 10px;
-        border-color: black;
-        border-width: 2px;
-        width: 100px;
-        border-radius: 25px;
+        border: 1px solid #333333;
+        border-radius: 8px;
         font-weight: 500;
         background-color: #EFEFEF;
+        cursor: pointer;
     }
 
     span.f4f-no-search-results {
-        width: 90%;
+        width: 100%;
         display: inline-block;
         color: orange;
     }
@@ -146,8 +185,24 @@
     }
 
     div.f4f-client-selected {
+        background-color: #F3F8FE;
+        border: 2px solid #378ADD;
+        padding: 15px 19px; /* 1px less than the default 16px 20px, to offset the thicker border */
+    }
+
+    div.f4f-client-selected .f4f-member-count {
+        background-color: #FFFFFF;
+        border: 1px solid #D8D8D8;
+    }
+
+    div.f4f-client-selected .f4f-selected-check {
         display: inline;
-        background-color: lightblue;
+    }
+
+    div.f4f-client-selected button.sponsor-button {
+        background-color: #378ADD;
+        border-color: #378ADD;
+        color: #FFFFFF;
     }
 
 </style>
@@ -156,18 +211,19 @@
     <section class="search-results-block">
         {{#.}}
         <div id='{{F4FNumber}}' class="f4f-client-card f4f-client-unselected">
-            <span class="f4f-family-name">{{ClientFirstName}}'s Family</span>
-            <table data-f4f-number="{{F4FNumber}}" class="f4f-family-members">
-                <tbody>
+            <div class="f4f-card-header">
+                <span class="f4f-family-name"><svg class="f4f-selected-check" viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6l-1.3-1.3a1 1 0 10-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clip-rule="evenodd"></path></svg>{{ClientFirstName}}'s Family</span>
+                <span class="f4f-member-count">{{FamilyMembers.length}} members</span>
+            </div>
+            <div class="f4f-family-members" data-f4f-number="{{F4FNumber}}">
                 {{#FamilyMembers}}
-                    <tr>
-                        <td>{{FMName}}</td>
-                        <td>{{FMGender}}</td>
-                        <td>Age: {{FMAge}}</td>
-                    </tr>
+                    <div class="f4f-family-member-row {{FMGenderClass}}">
+                        <svg class="f4f-gender-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a8 8 0 0 1 16 0v1"></path></svg>
+                        <span class="f4f-member-name">{{FMName}}</span>
+                        <span class="f4f-member-detail">{{FMGender}}, age {{FMAge}}</span>
+                    </div>
                 {{/FamilyMembers}}
-                </tbody>
-            </table>
+            </div>
             <button id="btnSponsor-{{F4FNumber}}" type="button" class="sponsor-button"
                     onclick="setSelectedSponsorFamily('{{F4FNumber}}');">Select</button>
         </div>
@@ -395,20 +451,13 @@
                             throw new Error(`could not find attribute 'for' on dropdown label ${DocIDs.meta[key].labelContent}`);
                         }
                     } else if (DocIDs.meta[key] && DocIDs.meta[key].type === "CHOICE-OPTION") {
-                        let optionChoiceBlocks = document.querySelectorAll(`div.tally-block-multiple-choice-option div`);
-                        let choiceFieldNameDiv = [].filter.call(optionChoiceBlocks, function (div) {
-                            if (div !== "undefined" && div !== null) {
-                                return div.innerHTML === DocIDs.meta[key].fieldName;
-                            } else {
-                                console.error("could not find div for DocIDs.meta[key] = " + key);
-                            }
-                        });
-                        if (choiceFieldNameDiv.length !== 1) {
-                            throw new Error(`could not find ${DocIDs.meta[key].fieldName}`);
-                        }
-                        let legendId = choiceFieldNameDiv[0].id; // legend_XXX
-
-                        let optionChoiceLabels = document.querySelectorAll(`input[aria-describedby='${legendId}'] + label`);
+                        // Tally used to render the internal field name (e.g. "SponsorPreviousFamilyYN") as
+                        // hidden text inside the choice block, letting us scrape our way to the right radio
+                        // group before matching on the visible label. Tally has since dropped that hidden
+                        // text entirely, which broke this lookup in production ("could not find
+                        // SponsorPreviousFamilyYN"). The visible label text is unique enough on this form to
+                        // match directly, so the fieldName/legend indirection is no longer needed.
+                        let optionChoiceLabels = document.querySelectorAll(`div.tally-block-multiple-choice-option label`);
                         let optionChoice = [].filter.call(optionChoiceLabels, function (label) {
                             return label.innerHTML === DocIDs.meta[key].labelContent;
                         });
@@ -477,7 +526,10 @@
     const gSponsorshipHistoryTabColumns = ["PreviousSponsorEmail"];
 
     // family results
-    const resultsPlaceholderSelector = 'div > div.sc-1a5a54bd-0.cDDyID.tally-text:contains("client family search results")';
+    // no sc-XXXXXXXX-N hash here on purpose - that's a per-build styled-components hash Tally
+    // regenerates on every frontend deploy (cDDyID as of a previous deploy, eXRVHL as of this one);
+    // tally-text is Tally's own stable semantic class and is enough to match uniquely on this page
+    const resultsPlaceholderSelector = 'div > div.tally-text:contains("client family search results")';
     const submitButtonSelector = 'button[type="submit"]';
 
     let gClientFamilyCache = null;
@@ -580,10 +632,10 @@
                 const sponsorEmailVal = document.getElementById(DocIDs.SponsorEmail).value;
                 fetchPrevSponsoredFamilies({prevSponsorEmail: sponsorEmailVal}, renderFamilyResults);
             } else if (event.target === prevSponsorNoCtrl) {
-                // user switches to 'NO' > show search inputs, refresh family results with new search using existing search input values ... unless they've never selected any values
-                if (getInputSearchControls().some((ctrl) => ctrl.value !== "")) {
-                    setTimeout(refreshFamilyResults, 300);
-                }
+                // user switches to 'NO' > show search inputs, refresh family results with new search
+                // always refresh here - refreshFamilyResults() itself now safely defaults any
+                // not-yet-rendered search control to "Any" rather than needing a pre-check
+                setTimeout(refreshFamilyResults, 300);
             }
         });
     }
@@ -596,9 +648,20 @@
             return DocIDs.search[key]
         });
 
+        // these controls can be legitimately absent from the DOM - Tally conditionally hides
+        // the Family Size/Gender dropdowns until the "previously sponsored?" question is
+        // answered, so on a true first page load (before that's answered) they may not exist
+        // yet at all. Default a missing control to "Any" (its own normal default) rather than
+        // crash on a null lookup or skip the refresh entirely - the previously-sponsored
+        // (PreviousSponsorEmail) filter below is independent of these and should still apply.
+        function getSearchControlValue(ctrlId) {
+            const ctrl = document.getElementById(ctrlId);
+            return ctrl ? ctrl.value : "Any";
+        }
+
         // assess each search input and whether it has changed (storing some info for debugging/logging)
         let changedValues = searchInputs.map((ctrlId) => {
-            const currentValue = document.getElementById(ctrlId).value;
+            const currentValue = getSearchControlValue(ctrlId);
             const lastValue = gLastSearchInputs[ctrlId];
             const lbl = DocIDs.findLabel(ctrlId);
             return {
@@ -630,7 +693,7 @@
             console.log("refreshing search results");
             const searchCriteria = {Sponsored: "No"};
             for (let key in DocIDs.search) {
-                searchCriteria[key.slice("Search".length)] = translateSearchValue(document.getElementById(DocIDs.search[key]).value);
+                searchCriteria[key.slice("Search".length)] = translateSearchValue(getSearchControlValue(DocIDs.search[key]));
             }
 
             window.dispatchEvent(new CustomEvent("F4F.ClientFamilySearch", {detail: searchCriteria}));
@@ -641,7 +704,16 @@
             renderFamilyResults.noResultsMessage = "No matching client families found. Please change your search criteria and try again.";
 
             if (gConfigData["UseFamilyResultsCache"]) {
-                renderFamilyResults( applySearchCriteria(gClientFamilyCache, searchCriteria) );
+                if (gClientFamilyCache === null) {
+                    // the initial family-list fetch (kicked off in jQuery(document).ready) hasn't
+                    // resolved yet - ignore this trigger rather than crash on a null cache; the
+                    // ready handler renders the initial result set itself once that fetch lands
+                    console.log("family cache not yet loaded; ignoring search trigger");
+                    return;
+                }
+                const matchedFamilies = applySearchCriteria(gClientFamilyCache, searchCriteria);
+                console.log(`refreshFamilyResults: criteria=${JSON.stringify(searchCriteria)} cacheSize=${gClientFamilyCache.length} matched=${matchedFamilies.length}`);
+                renderFamilyResults( matchedFamilies );
             } else {
                 fetchClientFamilyByCriteria(searchUrl, searchCriteria, renderFamilyResults);
             }
@@ -669,7 +741,7 @@
     jQuery(document).ready(async function ($) {
 
         DocIDs.initialize();
-        initializeConfiguration();
+        await initializeConfiguration();
 
         setupInputSearchTriggering(refreshFamilyResults);
         setupSponsorSearchTriggering();
@@ -695,9 +767,19 @@
 
         const response = await fetchClientFamilyByCriteriaEx(searchUrl, {Sponsored: 'No',});
         if (response.ok) {
-            response.json().then((json) => {
-                gClientFamilyCache = json;
-            });
+            // must be awaited (not a bare .then()) - this used to resolve after ready() had already
+            // returned, so any search trigger that fired before it landed hit a null gClientFamilyCache
+            // and crashed in applySearchCriteria's clientDataRows.filter(...)
+            gClientFamilyCache = await response.json();
+            // nothing ever rendered the initial result set before - the family list stayed
+            // empty until the user touched a search filter. Render it now that the cache is
+            // ready, using the same refreshFamilyResults() every other search goes through
+            // (not a hand-rolled {Sponsored:"No"}-only criteria) so the initial list respects
+            // AllowSignUpOfPreviouslySponsored/PreviousSponsorEmail the same as every other search -
+            // a bypass here previously showed every family regardless of prior-sponsor history.
+            if (gConfigData["UseFamilyResultsCache"]) {
+                refreshFamilyResults();
+            }
         }
     });
 
@@ -723,6 +805,10 @@
         renderFunction.noResultsMessage = "If you are looking for a family you previously sponsored, it is possible they have not signed up for this event. Please change your selection to 'No' and use the search below.";
 
         if (gConfigData["UseFamilyResultsCache"]) {
+            if (gClientFamilyCache === null) {
+                console.log("family cache not yet loaded; ignoring search trigger");
+                return;
+            }
             renderFunction(applySearchCriteria(gClientFamilyCache, searchCriteria));
         } else {
             fetchClientFamilyByCriteria(searchUrl, searchCriteria, renderFunction);
@@ -822,64 +908,45 @@
         });
     }
 
+    function genderIconClass(gender) {
+        switch (gender) {
+            case "Male": return "gender-male";
+            case "Female": return "gender-female";
+            case "Non-Binary": return "gender-nonbinary";
+            default: return "gender-other";
+        }
+    }
+
     function convertRowToObject(row) {
-
-        const repeatingBlocksConfig = {
-            "FM": {
-                "columns": ["FMName", "FMGender", "FMAge", "FMGrade"],
-                "required": ["FMName"],
-                "maxRepetitions": 10,
-                "outputTo": "FamilyMembers",
-            }
-        }
-        const allRepeatingColumns = [];
-        const tree = {};
-
-        /****
-         * repeating blocks
-         */
-        // 1. convert denormalized blocks (i.e. Xxx1, Yyyy1, Xxx2, Yyyy2) into array of objects [{Xxx, Yyy},{Xxx, Yyy}]
-        // 2. filter out those that don't meet required field restrictions
-        for (const blockKey in repeatingBlocksConfig) {
-            const blockConfig = repeatingBlocksConfig[blockKey];
-            tree[blockConfig.outputTo] = [];
-            // convert to a set of arrays (1 entry for each block)
-            for (let i = 1; i <= blockConfig.maxRepetitions; i++) {
-                const block = {};
-                blockConfig.columns.forEach((c) => {
-                    allRepeatingColumns.push(c + i);
-                    block[c] = row[c + i];
-                });
-                tree[blockConfig.outputTo].push(block);
-            }
-
-            tree[blockConfig.outputTo] = tree[blockConfig.outputTo].filter((block) => {
-                return blockConfig.required.every((r) => {
-                    return Object.hasOwn(block, r)
-                        && block[r] !== undefined
-                        && block[r] !== null && block[r] !== "";
-                });
-            });
-        }
-
-        /******
-         * standard columns
-         */
-        Object.keys(row).forEach((key) => {
-            if (allRepeatingColumns.includes(key) === false) {
-                tree[key] = row[key];
-            }
+        // the backend already flattens FM<Attribute><N> columns into row.FamilyMembers
+        // (see F4FEventsAPI.js's own convertRowToObject) - this used to redo that same
+        // flattening client-side from raw columns, back when the client fetched
+        // unprocessed sheet rows directly. Since the migration to the f4fevents backend,
+        // row.FamilyMembers already arrives fully built, so re-deriving it from flat
+        // FMName1/FMName2/... columns that no longer exist always produced an empty
+        // array; only display-only augmentation (the gender icon color class) belongs here now.
+        const tree = Object.assign({}, row);
+        tree.FamilyMembers = (row.FamilyMembers || []).map((member) => {
+            return Object.assign({}, member, { FMGenderClass: genderIconClass(member.FMGender) });
         });
-
-
         return tree;
     }
 
     function renderFamilyResults(familiesDataRows) {
+        const searchedCount = familiesDataRows.length;
+
         // filter out rows that shouldn't be allowed for selection
+        let droppedAlreadySponsored = 0;
+        let droppedMissingF4FNumber = 0;
         familiesDataRows = familiesDataRows.filter((r) => {
-            if (r["Sponsored"] && r["Sponsored"] === "Yes") return false;   // prevent catastrophe
-            if (!r["F4FNumber"] || r["F4FNumber"] === "") return false;     // required fields
+            if (r["Sponsored"] && r["Sponsored"] === "Yes") {              // prevent catastrophe
+                droppedAlreadySponsored++;
+                return false;
+            }
+            if (!r["F4FNumber"] || r["F4FNumber"] === "") {                // required fields
+                droppedMissingF4FNumber++;
+                return false;
+            }
             //TODO: add required field list in configuration
             return true;
         });
@@ -888,6 +955,27 @@
         const familiesData = familiesDataRows.map((row) => convertRowToObject(row));
         if (familiesData.length === 0) {
             familiesData.noResultsMessage = renderFamilyResults.noResultsMessage;
+
+            // distinguish "genuinely no matching families" from "matches exist but can't be shown"
+            // so this doesn't require another round of live debugging next time it comes up -
+            // F4FNumber is assigned in an external system we don't have API access to, so a family
+            // missing one can't be auto-fixed here; it needs a human to assign one
+            if (searchedCount > 0 && droppedMissingF4FNumber > 0) {
+                console.warn(`Search Returned No Results - available clients do not have F4FNumber assigned (${droppedMissingF4FNumber} of ${searchedCount})`);
+                safePostHog((ph) => ph.capture('sponsor_search_no_results', {
+                    reason: 'missing_f4fnumber',
+                    searchedCount,
+                    droppedMissingF4FNumber,
+                }));
+            } else if (searchedCount > 0 && droppedAlreadySponsored === searchedCount) {
+                console.warn('Search Returned No Results - all available clients have a previously assigned Sponsor');
+                safePostHog((ph) => ph.capture('sponsor_search_no_results', {
+                    reason: 'all_already_sponsored',
+                    searchedCount,
+                }));
+            } else if (searchedCount === 0) {
+                safePostHog((ph) => ph.capture('sponsor_search_no_results', { reason: 'no_matches' }));
+            }
         }
 
         const searchResultsTemplate = gConfigData["SearchResultsDisplayCardTemplate"];
