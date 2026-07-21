@@ -5,7 +5,7 @@
      (PostHog init, DocIDs machinery, search/render/submit). See families4families/events-browseronly
      on GitHub. This URL never changes - it's a stable redirect (via f4fevents backend) to
      whatever git tag is currently configured, so it never needs re-pasting into Tally. -->
-<script type="text/javascript" src="https://f4feventsserver-539935395831.us-east1.run.app/scripts/sponsor-signup-common.js"></script>
+<script type="text/javascript" src="https://f4feventsserver-539935395831.us-east1.run.app/scripts/sponsor-signup-common.js" crossorigin="anonymous"></script>
 
 <!--
 <link rel="stylesheet" href="https://rnorian.github.io/F4F/css/sponsor-signup.css">
