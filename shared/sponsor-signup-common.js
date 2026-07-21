@@ -30,15 +30,16 @@ try {
         }, e.__SV = 1)
     }(document, window.posthog || []);
 
+    // recordHeaders/recordBody and console-log recording were deliberately removed: session
+    // replay would otherwise capture full request/response bodies (sponsor/client PII) verbatim,
+    // and enabling console-log recording alongside our own window.onerror handler below created
+    // a feedback loop - our handler logs via console.error, PostHog's console-recording plugin
+    // intercepts that same call to record it, and if that interception itself throws, it's a new
+    // uncaught error that re-enters window.onerror, recursing until the stack overflows.
     posthog.init('phc_zD9wo5zTiFQhH3FRtmthPVXoqR5M8NVYAZ47uYtbjD3k', {
         api_host: 'https://us.i.posthog.com',
         person_profiles: 'identified_only',
         capture_exceptions: true,
-        enable_recording_console_log: true,
-        session_recording: {
-            recordHeaders: true,
-            recordBody: true,
-        },
     });
 } catch (e) {
     console.error('PostHog failed to initialize (ignored):', e);
@@ -59,7 +60,14 @@ function safePostHog(fn) {
 }
 
 window.onerror = function myErrorHandler(errorMsg) {
-    console.error(`unhandled error: ${errorMsg}`);
+    // guarded so a failure in logging itself (e.g. a monitoring SDK's own instrumentation
+    // throwing while intercepting this console.error call) can never produce a new uncaught
+    // error that re-enters this same handler and recurses
+    try {
+        console.error(`unhandled error: ${errorMsg}`);
+    } catch (e) {
+        // swallow - nothing more we can safely do here
+    }
     return false;
 }
 
