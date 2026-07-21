@@ -1,5 +1,3 @@
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"
-        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 <script type="text/javascript" src="https://unpkg.com/mustache@4.2.0"></script>
 <!-- shared/sponsor-signup-common.js - defines all cross-event Sponsor Sign-Up logic
      (PostHog init, DocIDs machinery, search/render/submit). See families4families/events-browseronly

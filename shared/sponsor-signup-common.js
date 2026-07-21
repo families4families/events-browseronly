@@ -72,8 +72,8 @@ window.onerror = function myErrorHandler(errorMsg) {
 }
 
 // window.onerror only catches synchronous throws - a rejected promise with no .catch() (e.g.
-// an async function passed to jQuery(document).ready() throwing before its first await) is
-// invisible to it and fails completely silently otherwise. Same guard rationale as above.
+// an async function passed to ready() throwing before its first await) is invisible to it and
+// fails completely silently otherwise. Same guard rationale as above.
 window.onunhandledrejection = function myUnhandledRejectionHandler(event) {
     try {
         console.error(`unhandled promise rejection: ${event.reason}`);
@@ -82,10 +82,25 @@ window.onunhandledrejection = function myUnhandledRejectionHandler(event) {
     }
 }
 
+function ready(fn) {
+    if (document.readyState !== 'loading') {
+        fn();
+        return;
+    }
+    document.addEventListener('DOMContentLoaded', fn);
+}
+
 // family results - matches on the visible text content, not any Tally CSS class, since
 // Tally regenerates per-build styled-components hash classes on every frontend deploy
-const resultsPlaceholderSelector = 'div > div.tally-text:contains("client family search results")';
+const resultsPlaceholderContainerSelector = 'div > div.tally-text';
+const resultsPlaceholderText = 'client family search results';
 const submitButtonSelector = 'button[type="submit"]';
+
+// plain-JS substitute for jQuery's :contains() pseudo-selector (a jQuery extension, not
+// standard CSS) - finds every element matching selector whose text content includes text
+function findElementsContainingText(selector, text) {
+    return Array.from(document.querySelectorAll(selector)).filter((el) => el.textContent.includes(text));
+}
 
 const gSystemFailureErrorMsg = `There was a problem with the web page. While your data has been saved, you have not been successfully assigned a client family.\n\nPlease contact Families 4 Families via email or phone to correct this.\n\nWe apologize for the inconvenience and thank you for your support.`;
 
@@ -200,10 +215,10 @@ function docIdsInitialize(root, node) {
             continue;
         }
 
-        const jElement = jQuery(`input[aria-label='${key}']`); // this works for standard text inputs
-        if (jElement.length === 1) {
-            node[key] = jElement[0].id;
-        } else if (jElement.length === 0) {
+        const matches = document.querySelectorAll(`input[aria-label='${key}']`); // this works for standard text inputs
+        if (matches.length === 1) {
+            node[key] = matches[0].id;
+        } else if (matches.length === 0) {
             // handle drop downs
             // 1. search for the <label>[LabelContent]</label> and extract inputId from the for=<inputId> attribute
             if (root.meta[key] && root.meta[key].type === "DROPDOWN") {
@@ -314,8 +329,12 @@ function getInputSearchIDs(docIds) {
 function setupInputSearchTriggering(docIds, searchFunction) {
     // (note: this is to avoid inserting a React app into the page - i.e. keep it as simple as possible)
     // weird that tally controls aren't throwing input events
-    jQuery('body').on('blur', 'input', function (event) {
-        // because these controls are hidden/shown ... they can get recreated by React (Tally) and so references must be re-bound to ensure test below will succeed
+    // delegated on body (native 'blur' doesn't bubble, so 'focusout' - its bubbling equivalent -
+    // is what makes delegation possible at all) rather than bound to specific elements: these
+    // controls are hidden/shown and get recreated by React (Tally), so any reference captured
+    // once would go stale - re-checking event.target.id against the current control list on
+    // every event is what makes this survive Tally re-rendering the DOM underneath it.
+    document.body.addEventListener('focusout', function (event) {
         let searchTriggeringControls = getInputSearchIDs(docIds);
 
         if (searchTriggeringControls.includes(event.target.id)) {
@@ -326,14 +345,15 @@ function setupInputSearchTriggering(docIds, searchFunction) {
 }
 
 function setupSponsorSearchTriggering(docIds, searchUrl) {
-    const prevSponsorYesCtrl = document.getElementById(docIds.infoOnly.SponsorPreviousFamilyY);
-    const prevSponsorNoCtrl = document.getElementById(docIds.infoOnly.SponsorPreviousFamilyN);
-    jQuery([prevSponsorNoCtrl, prevSponsorYesCtrl]).on('input', function (event) {
-        if (event.target === prevSponsorYesCtrl) {
+    // delegated on body and matched by id (not by a cached element reference) for the same
+    // reason as setupInputSearchTriggering above - Tally can recreate these radio inputs, and a
+    // reference captured once via getElementById would silently go stale when that happens
+    document.body.addEventListener('input', function (event) {
+        if (event.target.id === docIds.infoOnly.SponsorPreviousFamilyY) {
             // user switches to 'YES' > hide search inputs, refresh family results with new search w/prevSponsorEmail = <sponsor-email>
             const sponsorEmailVal = document.getElementById(docIds.SponsorEmail).value;
             fetchPrevSponsoredFamilies(docIds, searchUrl, {prevSponsorEmail: sponsorEmailVal}, renderFamilyResults);
-        } else if (event.target === prevSponsorNoCtrl) {
+        } else if (event.target.id === docIds.infoOnly.SponsorPreviousFamilyN) {
             // user switches to 'NO' > show search inputs, refresh family results with new search
             // always refresh here - refreshFamilyResults() itself safely defaults any
             // not-yet-rendered search control to "Any" rather than needing a pre-check
@@ -436,10 +456,16 @@ function translateSearchValue(val) {
 }
 
 function updateFormSubmitState(enabled) {
+    const btn = document.querySelector(submitButtonSelector);
+    if (!btn) {
+        return; // matches jQuery's silent no-op when the selector matches nothing
+    }
     if (enabled) {
-        jQuery(submitButtonSelector).removeAttr('disabled').removeAttr('style');
+        btn.removeAttribute('disabled');
+        btn.removeAttribute('style');
     } else {
-        jQuery(submitButtonSelector).prop('disabled', true).attr('style', 'color:gray');
+        btn.setAttribute('disabled', 'disabled');
+        btn.setAttribute('style', 'color:gray');
     }
 }
 
@@ -561,28 +587,37 @@ async function fetchClientFamilyByCriteriaEx(sheetUrl, criteria) {
 function fetchClientFamilyByCriteria(sheetUrl, criteria, renderFunction) {
     window.dispatchEvent(new CustomEvent("F4F.ClientFamilySearch", {detail: criteria}));
     console.log("search criteria" + JSON.stringify(criteria));
-    let clientFamilyData;
-    jQuery.ajax({
-        url: sheetUrl,
-        data: criteria,
-        type: "GET",
-        dataType: "json",
-        cache: false,
-        async: true,
-        timeout: 4000,
+
+    // cache: 'no-store' is fetch's own no-cache instruction - unlike jQuery's {cache: false},
+    // it does not append a "_=<timestamp>" query param to achieve the same thing, so this also
+    // sidesteps the whole class of bug where a stray query param got treated as a search filter
+    const queryParams = new URLSearchParams(criteria);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    fetch(`${sheetUrl}?${queryParams}`, {
+        method: "GET",
+        cache: "no-store",
+        signal: controller.signal,
     })
-    .done(function (json) {
-        console.log(json);
-        clientFamilyData = json;
-        gClientFamilyCache = clientFamilyData;
-        renderFunction(clientFamilyData);
-    })
-    .fail(function (xhr, status, errorThrown) {
-        console.log("Error: " + errorThrown);
-        console.log("Status: " + status);
-        console.log("Detail:" + xhr.responseTaxt);
-        console.dir(xhr);
-    });
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`Fetch Response Status: ${sheetUrl} --- ${response.status}`);
+            }
+            return response.json();
+        })
+        .then((json) => {
+            console.log(json);
+            gClientFamilyCache = json;
+            renderFunction(json);
+        })
+        .catch((error) => {
+            console.log("Error: " + error.message);
+            console.dir(error);
+        })
+        .finally(() => {
+            clearTimeout(timeoutId);
+        });
 }
 
 // filled in by initSponsorSignup(); the per-event convertRowToObject(row) function is called
@@ -769,7 +804,7 @@ function submitSponsorForm(docIds, searchUrl, payload) {
 }
 
 // docIds.initialize() throws if it can't find one of Tally's own form fields in the DOM yet.
-// jQuery(document).ready() fires at DOMContentLoaded, which can land before Tally's own
+// ready() fires at DOMContentLoaded, which can land before Tally's own
 // client-rendered React form has actually mounted those fields - a race, not a hard failure -
 // so retry for a while instead of giving up on the first attempt. Without this, the whole
 // bootstrap below (including the Yes/No search wiring) can silently abort: initialize() throwing
@@ -799,7 +834,7 @@ function initSponsorSignup(docIds, searchUrl) {
         submitSponsorForm(docIds, searchUrl, payload);
     });
 
-    jQuery(document).ready(async function ($) {
+    ready(async function () {
 
         await waitForDocIdsInitialize(docIds);
         await fetchEventConfiguration(searchUrl);
@@ -808,11 +843,11 @@ function initSponsorSignup(docIds, searchUrl) {
         setupSponsorSearchTriggering(docIds, searchUrl);
 
         // ensure that we have the search results placeholder div
-        const placeholderDiv = jQuery(resultsPlaceholderSelector);
-        if (!placeholderDiv || placeholderDiv.length !== 1) {
+        const placeholderMatches = findElementsContainingText(resultsPlaceholderContainerSelector, resultsPlaceholderText);
+        if (placeholderMatches.length !== 1) {
             throw Error("error: could not locate family results placeholder");
         }
-        gClientFamilyResultsContainerDiv = placeholderDiv[0];
+        gClientFamilyResultsContainerDiv = placeholderMatches[0];
 
         // disable the submit button before a family is selected
         updateFormSubmitState(false);
