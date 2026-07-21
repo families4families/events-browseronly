@@ -751,7 +751,18 @@
         if (!placeholderDiv || placeholderDiv.length !== 1) {
             throw Error("error: could not locate family results placeholder");
         }
-        gClientFamilyResultsContainerDiv = placeholderDiv[0];
+        // Render results into our own sibling div, never into the placeholder's own children.
+        // The placeholder is a node Tally's React created and still owns; repeatedly overwriting
+        // its innerHTML fights with React's own reconciliation of that same node whenever Tally
+        // later re-renders nearby form state, and that mismatch is what caused a real production
+        // stack overflow (React's reconciler recursing on children it no longer recognizes).
+        // Hiding the placeholder (a style change, not a child mutation) and inserting a wrapper
+        // div we fully own as its sibling keeps React's view of the placeholder's own children
+        // untouched forever, so it has nothing to get confused about on a later re-render.
+        placeholderDiv[0].style.display = 'none';
+        const resultsWrapperDiv = document.createElement('div');
+        placeholderDiv[0].insertAdjacentElement('afterend', resultsWrapperDiv);
+        gClientFamilyResultsContainerDiv = resultsWrapperDiv;
 
         // disable the submit button before a family is selected
         updateFormSubmitState(false);

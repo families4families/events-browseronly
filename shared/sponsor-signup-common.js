@@ -847,7 +847,19 @@ function initSponsorSignup(docIds, searchUrl) {
         if (placeholderMatches.length !== 1) {
             throw Error("error: could not locate family results placeholder");
         }
-        gClientFamilyResultsContainerDiv = placeholderMatches[0];
+        // Render results into our own sibling div, never into the placeholder's own children.
+        // The placeholder is a node Tally's React created and still owns; repeatedly overwriting
+        // its innerHTML fights with React's own reconciliation of that same node whenever Tally
+        // later re-renders nearby form state - that mismatch is what caused the production stack
+        // overflow this shared library previously worked around by disabling console-log
+        // recording (2026.Thanksgiving.1.0.2) rather than fixing the actual conflict. Hiding the
+        // placeholder (a style change, not a child mutation) and inserting a wrapper div we fully
+        // own as its sibling keeps React's view of the placeholder's own children untouched
+        // forever, so it has nothing to get confused about on a later re-render.
+        placeholderMatches[0].style.display = 'none';
+        const resultsWrapperDiv = document.createElement('div');
+        placeholderMatches[0].insertAdjacentElement('afterend', resultsWrapperDiv);
+        gClientFamilyResultsContainerDiv = resultsWrapperDiv;
 
         // disable the submit button before a family is selected
         updateFormSubmitState(false);
