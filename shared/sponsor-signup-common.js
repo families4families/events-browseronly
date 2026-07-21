@@ -475,6 +475,12 @@ function fetchPrevSponsoredFamilies(docIds, searchUrl, criteria, renderFunction)
     }
 }
 
+// this same wildcard/regex matching logic is independently duplicated in buildFilter in
+// families4families/f4fevents (api/SheetsAPI.js), used server-side whenever an event's
+// UseFamilyResultsCache config is false. They can't easily share code - that file is
+// Node/ES-modules on the Cloud Run backend, this one is plain global-scope browser script
+// with no bundler, per Tally's custom-code constraint. If you change the matching rules
+// here, update that copy too.
 function applySearchCriteria(clientDataRows, criteria) {
     const filters = {};
     for (let key in criteria) {
