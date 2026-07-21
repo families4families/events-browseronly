@@ -267,11 +267,16 @@ function docIdsInitialize(root, node) {
  * DocIDs.findLabel()'s actual implementation - see docIdsInitialize for why this is a free function.
  */
 function docIdsFindLabel(root, searchVal, node) {
-    node = node || root;
+    // `node === undefined` (not `node || root`) matters: some DocIDs.meta entries are legitimately
+    // `null` (e.g. Thanksgiving's SearchClientFamilyGender, which has no gender data to search on).
+    // `typeof null === 'object'` sends recursion in with node=null; `null || root` then falls back
+    // to root instead of stopping, sending the very next call right back into the same null entry
+    // - infinite recursion. Only the initial (no third argument) call should default to root.
+    node = node === undefined ? root : node;
     for (let key in node) {
         let val = node[key];
 
-        if (typeof val === 'object') {
+        if (typeof val === 'object' && val !== null) {
             let label = docIdsFindLabel(root, searchVal, val);
             if (label !== null) return label;
         }
