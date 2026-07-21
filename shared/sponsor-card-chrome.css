@@ -1,0 +1,100 @@
+/* Shared "chrome" for every event's family-result cards in Sponsor Sign-Up: layout,
+   border/radius, selected-state, badge, and button - the same visual language everywhere.
+   Each event's own <style> block covers only its content-specific layout (BTS's per-member
+   rows with gender icons, Thanksgiving's label/value rows, etc.) and sits alongside this file. */
+
+section.search-results-block {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 420px;
+}
+
+div.f4f-client-card {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 16px 20px;
+    border: 1px solid #D8D8D8;
+    border-radius: 12px;
+    background-color: transparent;
+
+    display: flex;
+    flex-direction: column;
+}
+
+div.f4f-client-card .f4f-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+div.f4f-client-card .f4f-family-name {
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.f4f-selected-check {
+    display: none;
+    color: #378ADD;
+}
+
+div.f4f-client-card .f4f-member-count {
+    font-size: 12px;
+    color: #0C447C;
+    background-color: #E6F1FB;
+    padding: 2px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+button.sponsor-button {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    font-weight: 500;
+    background-color: #EFEFEF;
+    cursor: pointer;
+}
+
+span.f4f-no-search-results {
+    width: 100%;
+    display: inline-block;
+    color: orange;
+}
+
+div.f4f-client-unselected {
+    background-color: transparent;
+}
+
+/* requires most specific selector to override flex */
+div.f4f-client-card.f4f-client-unselected.f4f-client-unavailable.f4f-client-unavailable {
+    display: none;
+}
+
+div.f4f-client-selected {
+    background-color: #F3F8FE;
+    border: 2px solid #378ADD;
+    padding: 15px 19px; /* 1px less than the default 16px 20px, to offset the thicker border */
+}
+
+div.f4f-client-selected .f4f-member-count {
+    background-color: #FFFFFF;
+    border: 1px solid #D8D8D8;
+}
+
+div.f4f-client-selected .f4f-selected-check {
+    display: inline;
+}
+
+div.f4f-client-selected button.sponsor-button {
+    background-color: #378ADD;
+    border-color: #378ADD;
+    color: #FFFFFF;
+}

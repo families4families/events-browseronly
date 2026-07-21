@@ -9,104 +9,49 @@
 <link rel="stylesheet" href="https://rnorian.github.io/F4F/css/sponsor-signup.css">
 <script type="text/javascript" src="https://rnorian.github.io/F4F/src/modules/F4FShared.js"></script>
 -->
+<!-- shared/sponsor-card-chrome.css - card border/radius, selected-state, badge, and button
+     styling shared across every event's Sponsor Sign-Up results, via the same stable redirect
+     as the shared JS library. Only Thanksgiving-specific layout (the label/value detail rows
+     below) lives in this file's own <style> block. -->
+<link rel="stylesheet" href="https://f4feventsserver-539935395831.us-east1.run.app/scripts/sponsor-card-chrome.css">
 <style>
-    section.search-results-block {
+    div.f4f-family-details {
         display: flex;
         flex-direction: column;
-        align-content: flex-start;
-        width: 100%;
-        max-width: 500px;
-        gap: 20px;
+        gap: 8px;
+        margin-bottom: 16px;
+        font-size: 14px;
     }
 
-    section.search-results-block div.f4f-client-card {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 10px;
-        border-color: black;
-        border-style: solid;
-        border-radius: 25px;
-        border-width: 1px;
-        border-spacing: 10px;
-
+    div.f4f-detail-row {
         display: flex;
-        flex-direction: column;
-        align-items: flex-start;
+        gap: 8px;
     }
 
-    section.search-results-block .f4f-family-name {
-        display: inline-block;
-        margin: 10px 10px 10px 15px; /* top right bottom left */
-        font-weight: bold;
+    div.f4f-detail-row .f4f-detail-label {
+        color: #666666;
+        min-width: 130px;
+        flex-shrink: 0;
     }
 
-    section.search-results-block div.f4f-client-card table.f4f-family-members {
-        width: 100%;
-        max-width: 100%;
-        padding-left: 10px;
-        padding-right: 20px;
-        padding-top: 10px;
-        padding-bottom: 10px;
-
-        border-spacing: 10px;
-        white-space: pre-wrap;
+    div.f4f-detail-row .f4f-detail-value {
+        overflow-wrap: break-word;
     }
-
-    section.search-results-block div.f4f-client-card table.f4f-family-members td {
-        padding-right: 10px;
-    }
-
-    button.sponsor-button {
-        margin: 30px 10px 10px 10px; /* top right bottom left */
-        padding: 10px;
-        border-color: black;
-        border-width: 2px;
-        width: 100px;
-        border-radius: 25px;
-        font-weight: 500;
-        background-color: #EFEFEF;
-    }
-
-    span.f4f-no-search-results {
-        width: 90%;
-        display: inline-block;
-        color: orange;
-    }
-
-    div.f4f-client-unselected {
-        background-color: transparent;
-    }
-
-    /* requires most specific selector to override flex */
-    div.f4f-client-card.f4f-client-unselected.f4f-client-unavailable.f4f-client-unavailable {
-        display: none;
-    }
-
-    div.f4f-client-selected {
-        display: inline;
-        background-color: lightblue;
-    }
-
 </style>
 
 <script type="x-tmpl-mustache" id="SearchResultsDisplayCardTemplate">
     <section class="search-results-block">
         {{#.}}
         <div id='{{F4FNumber}}' class="f4f-client-card f4f-client-unselected">
-            <span class="f4f-family-name">{{ClientFirstName}}'s Family</span>
-            <table data-f4f-number="{{F4FNumber}}" class="f4f-family-members">
-                <tbody>
-                <tr>
-                    <td nowrap>Family Size</td>
-                    <td nowrap style='width: 99%'>{{ClientFamilySizeDescription}}</td></tr>
-                <tr>
-                    <td nowrap>Dietary Restrictions</td>
-                    <td style='width: 99%; white-space:normal; word-wrap:break-word'>{{ClientDietaryRestrictionsDescription}}</td></tr>
-                <tr>
-                    <td nowrap style="vertical-align: text-top;">Special Requests</td>
-                    <td style='width: 99%; white-space:normal; word-wrap:break-word' >{{ClientSpecialRequestsDescription}}</td></tr>
-                </tbody>
-            </table>
+            <div class="f4f-card-header">
+                <span class="f4f-family-name"><svg class="f4f-selected-check" viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6l-1.3-1.3a1 1 0 10-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clip-rule="evenodd"></path></svg>{{ClientFirstName}}'s family</span>
+                <span class="f4f-member-count">{{ClientFamilyMemberCount}} people</span>
+            </div>
+            <div class="f4f-family-details" data-f4f-number="{{F4FNumber}}">
+                <div class="f4f-detail-row"><span class="f4f-detail-label">Family</span><span class="f4f-detail-value">{{ClientFamilyCompositionDescription}}</span></div>
+                <div class="f4f-detail-row"><span class="f4f-detail-label">Dietary restrictions</span><span class="f4f-detail-value">{{ClientDietaryRestrictionsDescription}}</span></div>
+                <div class="f4f-detail-row"><span class="f4f-detail-label">Special requests</span><span class="f4f-detail-value">{{ClientSpecialRequestsDescription}}</span></div>
+            </div>
             <button id="btnSponsor-{{F4FNumber}}" type="button" class="sponsor-button"
                     onclick="setSelectedSponsorFamily('{{F4FNumber}}');">Select</button>
         </div>
@@ -186,26 +131,37 @@
     };
 
     /**
+     * "2 adults, 2 children (ages: 23, 25)" - singular/plural handled here instead of the
+     * old "adult(s)"/"age(s)" text, and the age list only appears at all when there are children.
+     */
+    function describeFamilyComposition(adultCount, childAges) {
+        const adults = Number(adultCount) || 0;
+        const ages = (childAges || "").split(",").map((s) => s.trim()).filter(Boolean);
+        const childCount = ages.length;
+
+        const adultPart = `${adults} adult${adults === 1 ? '' : 's'}`;
+        const childPart = `${childCount} child${childCount === 1 ? '' : 'ren'}`;
+        const agesPart = childCount > 0 ? ` (age${childCount === 1 ? '' : 's'}: ${ages.join(', ')})` : '';
+
+        return { text: `${adultPart}, ${childPart}${agesPart}`, totalPeople: adults + childCount };
+    }
+
+    /**
      * Thanksgiving has no repeating family-member block (no FM<Attribute><N> columns at all -
      * just aggregate ClientAdultCount/ClientChildAges), so most of the row can be used as-is.
-     * The derived "Description" fields below are Thanksgiving-specific display formatting for
+     * The derived fields below are Thanksgiving-specific display formatting for
      * SearchResultsDisplayCardTemplate, computed here (not in renderFamilyResults) so that
      * function stays identical across every event.
      */
     function convertRowToObject(row) {
         const tree = Object.assign({}, row);
 
-        tree["ClientFamilySizeDescription"] = function() {
-            return tree.ClientFamilySize + " (" + tree.ClientAdultCount + " adult" + (tree.ClientAdultCount > 1 ? 's' : "") + ", "
-                    + (tree.ClientChildAges ? tree.ClientChildAges.split(",").length : 0) + " " + (tree.ClientChildAges ? (tree.ClientChildAges.split(",").length === 1 ? 'child' : 'children') : 'children')
-                    + (tree.ClientChildAges ? (tree.ClientChildAges.split(",").length > 0 ? " - age(s): " + tree.ClientChildAges : "") : "") + ")";
-        }();
-        tree["ClientDietaryRestrictionsDescription"] = function() {
-            return (!tree.ClientDietaryRestrictions || tree.ClientDietaryRestrictions.length === 0 || tree.ClientDietaryRestrictions.startsWith("None") ? "None" : tree.ClientDietaryRestrictions);
-        }();
-        tree["ClientSpecialRequestsDescription"] = function() {
-            return (!tree.ClientSpecialRequests || tree.ClientSpecialRequests.length === 0 ? "None" : tree.ClientSpecialRequests);
-        }();
+        const composition = describeFamilyComposition(tree.ClientAdultCount, tree.ClientChildAges);
+        tree["ClientFamilyCompositionDescription"] = composition.text;
+        tree["ClientFamilyMemberCount"] = composition.totalPeople;
+
+        tree["ClientDietaryRestrictionsDescription"] = (!tree.ClientDietaryRestrictions || tree.ClientDietaryRestrictions.length === 0 || tree.ClientDietaryRestrictions.startsWith("None") ? "None" : tree.ClientDietaryRestrictions);
+        tree["ClientSpecialRequestsDescription"] = (!tree.ClientSpecialRequests || tree.ClientSpecialRequests.length === 0 ? "None" : tree.ClientSpecialRequests);
 
         return tree;
     }
