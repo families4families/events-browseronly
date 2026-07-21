@@ -71,6 +71,17 @@ window.onerror = function myErrorHandler(errorMsg) {
     return false;
 }
 
+// window.onerror only catches synchronous throws - a rejected promise with no .catch() (e.g.
+// an async function passed to jQuery(document).ready() throwing before its first await) is
+// invisible to it and fails completely silently otherwise. Same guard rationale as above.
+window.onunhandledrejection = function myUnhandledRejectionHandler(event) {
+    try {
+        console.error(`unhandled promise rejection: ${event.reason}`);
+    } catch (e) {
+        // swallow - nothing more we can safely do here
+    }
+}
+
 // family results - matches on the visible text content, not any Tally CSS class, since
 // Tally regenerates per-build styled-components hash classes on every frontend deploy
 const resultsPlaceholderSelector = 'div > div.tally-text:contains("client family search results")';
@@ -757,6 +768,28 @@ function submitSponsorForm(docIds, searchUrl, payload) {
         });
 }
 
+// docIds.initialize() throws if it can't find one of Tally's own form fields in the DOM yet.
+// jQuery(document).ready() fires at DOMContentLoaded, which can land before Tally's own
+// client-rendered React form has actually mounted those fields - a race, not a hard failure -
+// so retry for a while instead of giving up on the first attempt. Without this, the whole
+// bootstrap below (including the Yes/No search wiring) can silently abort: initialize() throwing
+// inside this async ready callback is an unhandled promise rejection, which window.onerror does
+// not catch, so it fails with no visible error at all.
+async function waitForDocIdsInitialize(docIds, timeoutMs = 10000, intervalMs = 150) {
+    const start = Date.now();
+    let lastError;
+    while (Date.now() - start < timeoutMs) {
+        try {
+            docIds.initialize();
+            return;
+        } catch (e) {
+            lastError = e;
+            await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        }
+    }
+    throw lastError || new Error('docIds.initialize() timed out waiting for Tally form fields');
+}
+
 /**
  * Full page bootstrap, shared across every event's Sponsor Sign-Up form. Call this from the
  * per-event inline script after DocIDs/eventName/apiBase/searchUrl/convertRowToObject are defined.
@@ -768,7 +801,7 @@ function initSponsorSignup(docIds, searchUrl) {
 
     jQuery(document).ready(async function ($) {
 
-        docIds.initialize();
+        await waitForDocIdsInitialize(docIds);
         await fetchEventConfiguration(searchUrl);
 
         setupInputSearchTriggering(docIds, () => refreshFamilyResults(docIds, searchUrl));
