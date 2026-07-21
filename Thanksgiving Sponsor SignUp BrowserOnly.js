@@ -3,8 +3,9 @@
 <script type="text/javascript" src="https://unpkg.com/mustache@4.2.0"></script>
 <!-- shared/sponsor-signup-common.js - defines all cross-event Sponsor Sign-Up logic
      (PostHog init, DocIDs machinery, search/render/submit). See families4families/events-browseronly
-     on GitHub. PLACEHOLDER src below - replaced with the stable redirect URL once that route exists. -->
-<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/families4families/events-browseronly@2026.Thanksgiving.1.0.0/shared/sponsor-signup-common.js"></script>
+     on GitHub. This URL never changes - it's a stable redirect (via f4fevents backend) to
+     whatever git tag is currently configured, so it never needs re-pasting into Tally. -->
+<script type="text/javascript" src="https://f4feventsserver-539935395831.us-east1.run.app/scripts/sponsor-signup-common.js"></script>
 
 <!--
 <link rel="stylesheet" href="https://rnorian.github.io/F4F/css/sponsor-signup.css">

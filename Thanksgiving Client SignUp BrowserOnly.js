@@ -1,7 +1,8 @@
 <!-- shared/client-signup-common.js - defines all cross-event Client Sign-Up logic (PostHog
      init, field helpers, submit/error handling). See families4families/events-browseronly on
-     GitHub. PLACEHOLDER src below - replaced with the stable redirect URL once that route exists. -->
-<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/families4families/events-browseronly@2026.Thanksgiving.1.0.0/shared/client-signup-common.js"></script>
+     GitHub. This URL never changes - it's a stable redirect (via f4fevents backend) to
+     whatever git tag is currently configured, so it never needs re-pasting into Tally. -->
+<script type="text/javascript" src="https://f4feventsserver-539935395831.us-east1.run.app/scripts/client-signup-common.js"></script>
 
 <script type="text/javascript">
 
