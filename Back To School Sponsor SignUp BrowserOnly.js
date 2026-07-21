@@ -1,28 +1,70 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script type="text/javascript" src="https://unpkg.com/mustache@4.2.0"></script>
-<script src="https://unpkg.com/highlight.run"></script>
 <script>
-    H.init('1ep3rxjd', { // Get your project ID from https://app.highlight.io/setup
-        environment: 'production',
-        version: 'commit:abcdefg12345',
-        networkRecording: {
-            enabled: true,
-            recordHeadersAndBody: true,
-            urlBlocklist: [
-                // insert full or partial urls that you don't want to record here
-                // Out of the box, Highlight will not record these URLs (they can be safely removed):
-                "https://www.googleapis.com/identitytoolkit",
-                "https://securetoken.googleapis.com",
-            ],
-        },
-    });
+    // PostHog error tracking + product analytics (replaces Highlight.io).
+    // Loader is async and self-contained; wrapped in try/catch so any init failure
+    // here can never break the sign-up page.
+    try {
+        !function (t, e) {
+            var o, n, p, r;
+            e.__SV || (window.posthog = e, e._i = [], e.init = function (i, s, a) {
+                function g(t, e) {
+                    var o = e.split(".");
+                    2 == o.length && (t = t[o[0]], e = o[1]), t[e] = function () {
+                        t.push([e].concat(Array.prototype.slice.call(arguments, 0)))
+                    }
+                }
+                (p = t.createElement("script")).type = "text/javascript", p.crossOrigin = "anonymous", p.async = !0, p.src = s.api_host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js", (r = t.getElementsByTagName("script")[0]).parentNode.insertBefore(p, r);
+                var u = e;
+                for (void 0 !== a ? u = e[a] = [] : a = "posthog", u.people = u.people || [], u.toString = function (t) {
+                    var e = "posthog";
+                    return "posthog" !== a && (e += "." + a), t || (e += " (stub)"), e
+                }, u.people.toString = function () {
+                    return u.toString(1) + ".people (stub)"
+                }, o = "init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing reset debug getPageViewId captureException isFeatureEnabled".split(" "), n = 0; n < o.length; n++) g(u, o[n]);
+                e._i.push([i, s, a])
+            }, e.__SV = 1)
+        }(document, window.posthog || []);
 
+        // TODO: replace with your PostHog Project API Key + API host (from Project Settings after signup at posthog.com)
+        posthog.init('phc_zD9wo5zTiFQhH3FRtmthPVXoqR5M8NVYAZ47uYtbjD3k', {
+            api_host: 'https://us.i.posthog.com',
+            person_profiles: 'identified_only',
+            capture_exceptions: true, // autocapture uncaught errors + unhandled promise rejections
+            enable_recording_console_log: true, // show console logs during session replay playback
+            session_recording: {
+                recordHeaders: true, // capture network request/response headers during replay
+                recordBody: true, // capture network request/response bodies during replay
+            },
+        });
+    } catch (e) {
+        console.error('PostHog failed to initialize (ignored):', e);
+    }
+
+    /**
+     * Wraps a PostHog call so a failure inside PostHog (missing lib, thrown error, etc.)
+     * can never propagate and break the page.
+     */
+    function safePostHog(fn) {
+        try {
+            if (typeof posthog !== "undefined") {
+                fn(posthog);
+            }
+        } catch (e) {
+            console.error('PostHog call failed (ignored):', e);
+        }
+    }
+
+    // PostHog's exception autocapture (capture_exceptions: true, above) reports uncaught
+    // errors and unhandled promise rejections on its own via a chained window.onerror /
+    // window.onunhandledrejection wrapper, so this handler just logs and does not
+    // double-report to PostHog.
     window.onerror = function myErrorHandler(errorMsg) {
         console.error(`unhandled error: ${errorMsg}`);
         return false;
     }
+    //# sourceURL=bts-sponsor-signup/posthog-init.js
 </script>
 
 <!--
@@ -135,66 +177,6 @@
         {{/.}}
     </section>
 </script>
-<script type="x-tmpl-mustache" id="ConfirmationEmailDisplayCardTemplate">
-    <style>
-        section.client-family h3.family-name{
-            margin-bottom: 5px;
-        }
-
-        div.family-contact-block {
-            display: flex;
-            flex-direction: row;
-        }
-
-        section.client-family h4 {
-            margin: 0px 0px 0px 0px;
-            padding-top: 10px;
-        }
-
-        div.family-contact-methods table td {
-            padding-left: 5px;
-        }
-
-        div.family-contact-times {
-            margin-left: 50px;
-        }
-
-        div.family-contact-times table td {
-            padding-left: 5px;
-        }
-
-        div.family-contact-times table td:nth-child(2) {
-            padding-left: 15px;
-        }
-    </style>
-        <section class="client-family">
-        <h3 class="family-name">{{ClientFirstName}}'s Family</h3>
-        <h4 style="margin: 0px 0px 0px 0px;">Family Members</h4>
-        <div class="family-members">
-            <table>
-                <thead class="family-member-headers">
-                <tr>
-                    <th>Name</th>
-                    <th>Gender</th>
-                    <th>Age</th>
-                    <th>Grade</th>
-                </tr>
-                </thead>
-                <tbody>
-                {{#FamilyMembers}}
-                    <tr>
-                        <td>{{FMName}}</td>
-                        <td>{{FMGender}}</td>
-                        <td>{{FMAge}}</td>
-                        <td>{{FMGrade}}</td>
-                    </tr>
-                {{/FamilyMembers}}
-                </tbody>
-            </table>
-        </div>
-        </section>
-</script>
-
 <script type="text/javascript">
     /**
      *
@@ -476,11 +458,10 @@
             return inputs;
         }
     };
+    //# sourceURL=bts-sponsor-signup/docids.js
 </script>
 
 <script type="text/javascript">
-
-    emailjs.init({publicKey: "ukws6XKmos438OOho",});
 
     /*****************
      *  CONFIGURATION
@@ -488,13 +469,11 @@
     const eventName = 'BTS';
     /** todo: read the sheet tab name (or the event name & year) from the URL **/
     const eventYear = new Date().getFullYear();
-    const f4fSheet = `https://sheet.best/api/sheets/f1d55e40-55cb-4141-95d6-c43d1384c9d5`;
-    const gEventSheet = `${f4fSheet}/tabs/${eventName}${eventYear}`
-    const gEventSheetQuery = `${gEventSheet}/query`;
+    // f4fevents backend (replaces sheet.best) - see families4families/f4fevents on GitHub
+    const apiBase = `https://f4feventsserver-539935395831.us-east1.run.app`;
+    const searchUrl = `${apiBase}/${eventName}/${eventYear}`;
 
-    //FUTURE: const gSponsorshipHistoryQuery = `${f4fSheet}/tabs/SponsorshipHistory/query`;
     //FUTURE: const gSponsorshipHistoryTabColumns = ["LockedTo", "Thanksgiving", "AdoptAStudent", "Christmas"];
-    const gSponsorshipHistoryQuery = gEventSheetQuery;
     const gSponsorshipHistoryTabColumns = ["PreviousSponsorEmail"];
 
     // family results
@@ -529,17 +508,16 @@
     const gConfigData = {};
 
     async function initializeConfiguration() {
-        let url = `${f4fSheet}/tabs/EventConfiguration`;
-        const configData = await fetchEventConfigurationData(url, eventName + eventYear);
-        configData.forEach((row) => {
-            let value = row["Value"];
-            if (row["Type"] === "boolean") {
-                value = JSON.parse(value);
-            } else if (row["Type"] === "Number") {
-                value = Number(value);
-            }
-            gConfigData[row["Key"]] = value;
+        // backend already returns a fully-typed {Key: Value} map (booleans/numbers coerced server-side)
+        const response = await fetch(`${searchUrl}/config`, {
+            method: "GET",
+            headers: {'Content-Type': 'application/json;charset=utf-8'},
         });
+        if (!response.ok) {
+            throw Error('could not load event configuration data');
+        }
+        const configData = await response.json();
+        Object.assign(gConfigData, configData);
 
         // override with query string params for development testing
         if (window) {
@@ -579,7 +557,6 @@
         return searchTriggeringControlIDs;
     }
 
-    gSessionUserRecorded = false;
     function setupInputSearchTriggering(searchFunction) {
         // (note: this is to avoid inserting a React app into the page - i.e. keep it as simple as possible)
         // weird that tally controls aren't throwing input events
@@ -590,9 +567,6 @@
             if (searchTriggeringControls.includes(event.target.id)) {
                 console.log(`input changed: ${event.target.id}`);
                 setTimeout(searchFunction, 300); // crappy workaround to tally approach or my lack of understanding
-            } else if (gSessionUserRecorded === false && event.target.id === DocIDs.SponsorEmail) {
-                const email = document.getElementById(DocIDs.SponsorEmail).value;
-                H.identify(email, {});
             }
         });
     }
@@ -669,7 +643,7 @@
             if (gConfigData["UseFamilyResultsCache"]) {
                 renderFamilyResults( applySearchCriteria(gClientFamilyCache, searchCriteria) );
             } else {
-                fetchClientFamilyByCriteria(gEventSheetQuery, searchCriteria, renderFamilyResults);
+                fetchClientFamilyByCriteria(searchUrl, searchCriteria, renderFamilyResults);
             }
         }
     }
@@ -719,7 +693,7 @@
 
         window.addEventListener("F4F.ClientFamilySearch", () => updateFormSubmitState(false));
 
-        const response = await fetchClientFamilyByCriteriaEx(gEventSheetQuery, {Sponsored: 'No',});
+        const response = await fetchClientFamilyByCriteriaEx(searchUrl, {Sponsored: 'No',});
         if (response.ok) {
             response.json().then((json) => {
                 gClientFamilyCache = json;
@@ -733,22 +707,6 @@
         } else {
             jQuery(submitButtonSelector).prop('disabled', true).attr('style', 'color:gray');
         }
-    }
-
-    async function fetchEventConfigurationData(configSheetUrl, eventScope) {
-        let criteria = `/EventTabName/${eventScope}`;
-        const request = new Request(configSheetUrl + criteria, {
-            method: "GET",
-            headers: {'Content-Type': 'application/json;charset=utf-8'},
-        })
-
-        const response = await fetch(request);
-        if (!response.ok) {
-            throw Error('could not load event configuration data');
-        }
-
-        const responseData = await response.json();
-        return responseData;
     }
 
     function fetchPrevSponsoredFamilies(criteria, renderFunction) {
@@ -767,7 +725,7 @@
         if (gConfigData["UseFamilyResultsCache"]) {
             renderFunction(applySearchCriteria(gClientFamilyCache, searchCriteria));
         } else {
-            fetchClientFamilyByCriteria(gSponsorshipHistoryQuery, searchCriteria, renderFunction);
+            fetchClientFamilyByCriteria(searchUrl, searchCriteria, renderFunction);
         }
     }
 
@@ -842,7 +800,7 @@
         console.log("search criteria" + JSON.stringify(criteria));
         let clientFamilyData;
         jQuery.ajax({
-            url: gEventSheetQuery,
+            url: sheetUrl,
             data: criteria,
             type: "GET",
             dataType: "json",
@@ -1013,15 +971,9 @@
             return;
         }
 
-        const queryParams = {
-            "F4FNumber": f4fNumber, // scope update to the selected family
-            "Sponsored": "No",  // light-weight (and not foolproof) concurrency (change to an integer value)
-        };
-        const queryString = new URLSearchParams(queryParams).toString();
-
         const bodyData = {
             "Sponsored": "Yes",
-            "SponsorSignUpDate": new Date().toLocaleString().split(',').join(' '),
+            "SponsorSignUpDate": new Date().toISOString(),
         };
 
         let inputFields = DocIDs.inputFields();
@@ -1036,7 +988,16 @@
             bodyData[fieldName] = value;
         });
 
-        const url = `${gEventSheet}/search?${queryString}`
+        // ties this PostHog session/replay to the submitting sponsor instead of staying anonymous
+        safePostHog((ph) => ph.identify(bodyData.SponsorEmail, {
+            email: bodyData.SponsorEmail,
+            first_name: bodyData.SponsorFirstName,
+            last_name: bodyData.SponsorLastName,
+        }));
+
+        // backend matches on F4FNumber + Sponsored=No (same optimistic-concurrency check sheet.best did)
+        // and, in this same call, also renders + sends the confirmation email server-side
+        const url = `${searchUrl}/${f4fNumber}/sponsor`;
         fetch(url, {
             method: "PATCH",
             mode: "cors",
@@ -1045,33 +1006,15 @@
         })
             .then((r) => {
                 if (r.status === 200) {
-                    const familyData = JSON.parse(selectedCard.dataset.f4fFamily);
-                    const dropOffDateTime = gConfigData[`${familyData.ReferringAgency} DropOffDayTime`];
-                    const familyTemplate = gConfigData["ConfirmationEmailDisplayCardTemplate"];
-                    const familyHtml = Mustache.render(familyTemplate, familyData);
-
-                    // package all the field data plus HTML generated table for the family, and send for use in email template
-                    const templateParams = Object.assign({}, bodyData, {
-                        FamilyHtml: familyHtml,
-                        DropOffDateTime: dropOffDateTime,
+                    r.json().then((updateResults) => {
+                        if (updateResults.emailSent) {
+                            console.log('Thank you! Your sign up was successful! Please check your inbox for a confirmation email. If you do not see it, please check your spam folder.');
+                        } else {
+                            console.log('FAILED to send confirmation email...');
+                            alert('Error! \n\nWe tried to send you an email with your sponsorship details, but something failed on our side! Please try filling out the form again or email Families for Families if the problem continues');
+                        }
                     });
-
-                    //return;
-                    // emailjs.send('<YOUR_SERVICE_ID>','<YOUR_TEMPLATE_ID>', templateParams, '<YOUR_PUBLIC_KEY>')
-                    // f4f servide-id: service_y7z7za8
-                    // raffi service-id: service_7pz9wh6
-                    emailjs.send("service_y7z7za8", "2025_bts_sponsor_confirm", templateParams, "ukws6XKmos438OOho")
-                        .then(
-                            (response) => {
-                                //alert('Thank you! Your sign up was successful! Please check your inbox for a confirmation email. If you do not see it, please check your spam folder.')
-                                console.log('Thank you! Your sign up was successful! Please check your inbox for a confirmation email. If you do not see it, please check your spam folder.');
-                            },
-                            (err) => {
-                                console.log('FAILED...', err);
-                                alert('Error! \n\nWe tried to send you an email with your sponsorship details, but something failed on our side! Please try filling out the form again or email Families for Families if the problem continues');
-                            }
-                        )
-                } else if (r.status !== 200) {
+                } else {
                     let msg = "failure during save to Google Sheets: " + r.statusText;
                     msg += `\n\n${JSON.stringify(bodyData)}\n\n`
                     r.text().then((text) => msg += `   ${text}`);
@@ -1084,4 +1027,5 @@
             });
     }
 
+    //# sourceURL=bts-sponsor-signup/main.js
 </script>
