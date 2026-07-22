@@ -628,6 +628,24 @@
         });
     }
 
+    // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is confirmed
+    // fixed): log every event type below that fires on a tracked search control, unconditionally,
+    // so we get a complete first-hand picture of what Tally's dropdown actually dispatches on a
+    // real phone - check the Console tab in the PostHog replay directly, don't rely on the AI
+    // summary. Capture phase (true) so this also catches 'blur'/'focus', which don't bubble.
+    function setupDiagnosticEventLogging() {
+        const eventTypes = ['blur', 'focus', 'focusin', 'focusout', 'input', 'change', 'click',
+            'pointerdown', 'pointerup', 'touchstart', 'touchend', 'keydown'];
+        eventTypes.forEach((evtType) => {
+            document.body.addEventListener(evtType, function (event) {
+                const trackedControls = getInputSearchIDs();
+                if (trackedControls.includes(event.target.id)) {
+                    console.log(`[diag2] ${evtType} on ${event.target.id} value=${event.target.value}`);
+                }
+            }, true);
+        });
+    }
+
     function setupSponsorSearchTriggering() {
         const prevSponsorYesCtrl = document.getElementById(DocIDs.infoOnly.SponsorPreviousFamilyY);
         const prevSponsorNoCtrl = document.getElementById(DocIDs.infoOnly.SponsorPreviousFamilyN);
@@ -749,6 +767,7 @@
         await initializeConfiguration();
 
         setupInputSearchTriggering(refreshFamilyResults);
+        setupDiagnosticEventLogging();
         setupSponsorSearchTriggering();
 
         // ensure that we have the search results placeholder div
