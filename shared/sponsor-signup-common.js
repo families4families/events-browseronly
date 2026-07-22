@@ -476,6 +476,14 @@ function updateFormSubmitState(enabled) {
         caption.style.textAlign = 'center';
         caption.style.fontSize = '13px';
         caption.style.marginTop = '6px';
+        // The button's own parent is one of Tally's flex rows (flex-direction: row), so a plain
+        // sibling sits *beside* the button instead of below it. flex-wrap on the parent (a style
+        // property, not a child-list change, so it doesn't risk the same React-reconciliation
+        // conflict as mutating Tally-owned children) plus flex-basis:100% on this caption makes
+        // it wrap onto its own full-width line under the button.
+        btn.parentElement.style.flexWrap = 'wrap';
+        caption.style.flexBasis = '100%';
+        caption.style.width = '100%';
         btn.insertAdjacentElement('afterend', caption);
     }
 
