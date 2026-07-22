@@ -795,10 +795,57 @@
     });
 
     function updateFormSubmitState(enabled) {
+        const btn = jQuery(submitButtonSelector)[0];
+        if (!btn) {
+            return; // matches jQuery's silent no-op when the selector matches nothing
+        }
+
+        // One-time: add a caption as the button's sibling, rather than repeatedly touching the
+        // button's own children - inserting next to a Tally-owned node instead of mutating its
+        // contents avoids fighting Tally's own React reconciliation of that node.
+        let caption = btn.nextElementSibling;
+        if (!caption || !caption.classList || !caption.classList.contains('f4f-submit-caption')) {
+            caption = document.createElement('div');
+            caption.className = 'f4f-submit-caption';
+            caption.style.textAlign = 'left';
+            caption.style.fontSize = '13px';
+            caption.style.marginTop = '6px';
+            // The button's own parent is one of Tally's flex rows (flex-direction: row), so a
+            // plain sibling sits *beside* the button instead of below it. flex-wrap on the parent
+            // (a style property, not a child-list change, so it doesn't risk the same
+            // React-reconciliation conflict as mutating Tally-owned children) plus
+            // flex-basis:100% on this caption makes it wrap onto its own full-width line under
+            // the button, left-aligned to match the button's own left edge.
+            btn.parentElement.style.flexWrap = 'wrap';
+            caption.style.flexBasis = '100%';
+            btn.insertAdjacentElement('afterend', caption);
+        }
+
+        // Tally's own markup colors the button's inner <span>/<i> (text/icon) directly,
+        // independent of any color set on the <button> element itself - a color override on just
+        // the button has no visible effect, so the span/icon need to be targeted explicitly too.
+        const innerSpan = btn.querySelector('span');
+        const innerIcon = btn.querySelector('i');
+
         if (enabled) {
-            jQuery(submitButtonSelector).removeAttr('disabled').removeAttr('style');
+            // Keep Tally's own default button color untouched (only sizing is ours) - so "ready"
+            // reads as its own distinct primary action, rather than reusing the same blue already
+            // used for a family card's Select/Deselect toggle, which read as confusingly similar.
+            jQuery(btn).removeAttr('disabled').attr('style', 'width:100%;box-sizing:border-box;opacity:1;');
+            if (innerSpan) innerSpan.style.removeProperty('color');
+            if (innerIcon) innerIcon.style.removeProperty('color');
+            caption.textContent = '✓ Ready to submit';
+            caption.style.color = '#3B6D11';
         } else {
-            jQuery(submitButtonSelector).prop('disabled', true).attr('style', 'color:gray');
+            // Dimmed fill (matching the border/text colors already used for an unselected family
+            // card) plus a real opacity reduction and not-allowed cursor. Legible text color
+            // alone still read as "maybe clickable" - the faded-relative-to-the-page look is what
+            // actually signals "inactive", without resorting to low-contrast (unreadable) text.
+            jQuery(btn).prop('disabled', true).attr('style', 'width:100%;box-sizing:border-box;background-color:#EFEFEF;border:1px solid #D8D8D8;color:#5F5E5A;cursor:not-allowed;opacity:0.55;');
+            if (innerSpan) innerSpan.style.color = '#5F5E5A';
+            if (innerIcon) innerIcon.style.color = '#5F5E5A';
+            caption.textContent = 'Select a family above to enable';
+            caption.style.color = '#888888';
         }
     }
 
