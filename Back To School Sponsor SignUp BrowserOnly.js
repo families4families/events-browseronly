@@ -628,21 +628,33 @@
         });
     }
 
-    // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is confirmed
-    // fixed): log every event type below that fires on a tracked search control, unconditionally,
-    // so we get a complete first-hand picture of what Tally's dropdown actually dispatches on a
-    // real phone - check the Console tab in the PostHog replay directly, don't rely on the AI
-    // summary. Capture phase (true) so this also catches 'blur'/'focus', which don't bubble.
-    function setupDiagnosticEventLogging() {
-        const eventTypes = ['blur', 'focus', 'focusin', 'focusout', 'input', 'change', 'click',
-            'pointerdown', 'pointerup', 'touchstart', 'touchend', 'keydown'];
-        eventTypes.forEach((evtType) => {
-            document.body.addEventListener(evtType, function (event) {
-                const trackedControls = getInputSearchIDs();
-                if (trackedControls.includes(event.target.id)) {
-                    console.log(`[diag2] ${evtType} on ${event.target.id} value=${event.target.value}`);
-                }
-            }, true);
+    // Confirmed via direct testing (2026-07-22) that on real mobile Safari, Tally's dropdown
+    // widget never fires blur/focusout/change/input at all when a selection is made (broad event
+    // logging showed only pointer/touch/click on the control itself, never on an actual value
+    // change) - yet setupInputSearchTriggering's blur listener above IS confirmed working on
+    // desktop Safari. Rather than chase whichever single DOM event this widget's mobile variant
+    // may or may not bother to dispatch, this observes the control's own DOM subtree directly:
+    // showing a new selection necessarily mutates *something* in there (confirmed: 8 real
+    // mutations recorded for one selection, on a wrapper div under Tally's own stable
+    // `.tally-block` class), regardless of which event (if any) accompanies it. This runs
+    // alongside the existing listener, not instead of it - each platform ends up using whichever
+    // signal actually fires for it.
+    function setupMutationObserverTriggering(searchFunction) {
+        let debounceTimer = null;
+        const scheduleRefresh = () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(searchFunction, 300);
+        };
+
+        getInputSearchIDs().forEach((ctrlId) => {
+            const ctrl = document.getElementById(ctrlId);
+            const wrapper = ctrl ? ctrl.closest('.tally-block') : null;
+            if (!wrapper) {
+                console.error(`could not find .tally-block wrapper for search control ${ctrlId} - mutation-based triggering skipped for it`);
+                return;
+            }
+            new MutationObserver(scheduleRefresh)
+                .observe(wrapper, {childList: true, subtree: true, attributes: true, characterData: true});
         });
     }
 
@@ -767,7 +779,7 @@
         await initializeConfiguration();
 
         setupInputSearchTriggering(refreshFamilyResults);
-        setupDiagnosticEventLogging();
+        setupMutationObserverTriggering(refreshFamilyResults);
         setupSponsorSearchTriggering();
 
         // ensure that we have the search results placeholder div
