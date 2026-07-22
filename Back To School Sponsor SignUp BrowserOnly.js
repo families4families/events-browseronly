@@ -611,13 +611,13 @@
 
     function setupInputSearchTriggering(searchFunction) {
         // (note: this is to avoid inserting a React app into the page - i.e. keep it as simple as possible)
-        // Confirmed via PostHog session replay (real mobile Safari, not desktop/emulated testing):
-        // 'blur'/'focusout' never fires at all on a real phone's tap-driven selection of Tally's
-        // custom dropdown - not even an unconditional diagnostic log that ran on every blur.
-        // 'change' does fire reliably (confirmed via PostHog's own autocapture, which caught real
-        // 'change' events on this exact control on the same device) and bubbles natively, so
-        // jQuery's delegation needs no special handling for it either.
-        jQuery('body').on('change', 'input', function (event) {
+        // Reverted back to 'blur' after direct, unfiltered console verification in real desktop
+        // Safari (2026-07-22): blur/focusout DO fire reliably on this control, with the
+        // fully-updated value by the second firing per selection - 'change' never fires at all
+        // for this widget. An earlier attempt to switch to 'change' was based on an
+        // AI-summarized reading of a mobile replay's console tab that turned out to be
+        // unreliable - don't trust that method again; read the raw console output directly.
+        jQuery('body').on('blur', 'input', function (event) {
             // because these controls are hidden/shown ... they can get recreated by React (Tally) and so references must be re-bound to ensure test below will succeed
             let searchTriggeringControls = getInputSearchIDs();
 

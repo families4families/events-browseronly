@@ -333,13 +333,13 @@ function getInputSearchIDs(docIds) {
 
 function setupInputSearchTriggering(docIds, searchFunction) {
     // (note: this is to avoid inserting a React app into the page - i.e. keep it as simple as possible)
-    // Confirmed via PostHog session replay (real mobile Safari, not desktop/emulated testing):
-    // 'focusout'/'blur' never fires at all on a real phone's tap-driven selection of Tally's
-    // custom dropdown - not even the previous diagnostic log that ran unconditionally on every
-    // focusout. 'change' does fire reliably (confirmed via PostHog's own autocapture, which
-    // caught real 'change' events on this exact control on the same device) and bubbles
-    // natively, so body-delegation needs no special capture-phase handling either.
-    document.body.addEventListener('change', function (event) {
+    // Reverted back to 'focusout' (native equivalent of delegated 'blur') after direct,
+    // unfiltered console verification in real desktop Safari (2026-07-22): blur/focusout DO fire
+    // reliably on this control, with the fully-updated value by the second firing per selection -
+    // 'change' never fires at all for this widget. An earlier attempt to switch to 'change' was
+    // based on an AI-summarized reading of a mobile replay's console tab that turned out to be
+    // unreliable - don't trust that method again; read the raw console output directly.
+    document.body.addEventListener('focusout', function (event) {
         let searchTriggeringControls = getInputSearchIDs(docIds);
 
         if (searchTriggeringControls.includes(event.target.id)) {
