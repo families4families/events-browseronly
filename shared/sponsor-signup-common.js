@@ -887,10 +887,14 @@ function initSponsorSignup(docIds, searchUrl) {
             // render the initial result set now that the cache is ready, using the same
             // refreshFamilyResults() every other search goes through (not a hand-rolled
             // {Sponsored:"No"}-only criteria) so it respects AllowSignUpOfPreviouslySponsored/
-            // PreviousSponsorEmail the same as every other search
-            if (gConfigData["UseFamilyResultsCache"]) {
-                refreshFamilyResults(docIds, searchUrl);
-            }
+            // PreviousSponsorEmail the same as every other search. This must run regardless of
+            // UseFamilyResultsCache - that flag only controls *how* refreshFamilyResults searches
+            // (local cache filter vs. server fetch), not *whether* the first render happens. Events
+            // using the server-search path (UseFamilyResultsCache: false, e.g. Thanksgiving) were
+            // never rendering an initial result set at all before this - nothing showed up until
+            // the user touched a search field, since gLastSearchInputs starts empty and every
+            // control naturally counts as "changed" on this first call regardless of the flag.
+            refreshFamilyResults(docIds, searchUrl);
         }
     });
 }
