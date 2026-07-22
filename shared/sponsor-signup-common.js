@@ -465,12 +465,33 @@ function updateFormSubmitState(enabled) {
     if (!btn) {
         return; // matches jQuery's silent no-op when the selector matches nothing
     }
+
+    // One-time: add a caption as the button's sibling, rather than repeatedly touching the
+    // button's own children - same reasoning as the results-wrapper fix elsewhere in this file,
+    // insert next to Tally-owned nodes instead of mutating their contents.
+    let caption = btn.nextElementSibling;
+    if (!caption || !caption.classList || !caption.classList.contains('f4f-submit-caption')) {
+        caption = document.createElement('div');
+        caption.className = 'f4f-submit-caption';
+        caption.style.textAlign = 'center';
+        caption.style.fontSize = '13px';
+        caption.style.marginTop = '6px';
+        btn.insertAdjacentElement('afterend', caption);
+    }
+
     if (enabled) {
         btn.removeAttribute('disabled');
-        btn.removeAttribute('style');
+        // Solid blue fill - same blue used for a selected family card - reinforces "blue = ready"
+        btn.setAttribute('style', 'background-color:#378ADD;border:none;color:#FFFFFF;cursor:pointer;opacity:1;');
+        caption.textContent = '✓ Ready to submit';
+        caption.style.color = '#3B6D11';
     } else {
         btn.setAttribute('disabled', 'disabled');
-        btn.setAttribute('style', 'color:gray');
+        // Muted gray fill, matching the same border/text colors already used for an unselected
+        // family card - a real visual dimming (not just a text-color tweak) plus not-allowed cursor
+        btn.setAttribute('style', 'background-color:#EFEFEF;border:1px solid #D8D8D8;color:#888888;cursor:not-allowed;opacity:1;');
+        caption.textContent = 'Select a family above to enable';
+        caption.style.color = '#888888';
     }
 }
 
