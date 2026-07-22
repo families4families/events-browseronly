@@ -616,6 +616,11 @@
             // because these controls are hidden/shown ... they can get recreated by React (Tally) and so references must be re-bound to ensure test below will succeed
             let searchTriggeringControls = getInputSearchIDs();
 
+            // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found):
+            // unconditional, to see whether this blur/focusout delegation even fires on a real
+            // phone's tap-driven dropdown selection at all, independent of whether the id matches.
+            console.log(`[diag] blur fired: target.id=${event.target.id} tagName=${event.target.tagName} matchesTrackedControl=${searchTriggeringControls.includes(event.target.id)} trackedControls=${JSON.stringify(searchTriggeringControls)}`);
+
             if (searchTriggeringControls.includes(event.target.id)) {
                 console.log(`input changed: ${event.target.id}`);
                 setTimeout(searchFunction, 300); // crappy workaround to tally approach or my lack of understanding
@@ -643,6 +648,11 @@
     const gLastSearchInputs = {};
 
     function refreshFamilyResults() {
+        // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found):
+        // unconditional entry-point marker, to tell apart "the triggering event never fired" from
+        // "it fired, but this function's own later gating/logic never actually re-rendered."
+        console.log('[diag] refreshFamilyResults() invoked');
+
         //const searchInputs = [DocIDs.search.SearchClientFamilySize, DocIDs.search.SearchClientDietaryRestrictions];
         const searchInputs = Object.keys(DocIDs.search).map((key) => {
             return DocIDs.search[key]

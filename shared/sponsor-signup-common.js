@@ -342,6 +342,11 @@ function setupInputSearchTriggering(docIds, searchFunction) {
     document.body.addEventListener('focusout', function (event) {
         let searchTriggeringControls = getInputSearchIDs(docIds);
 
+        // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found):
+        // unconditional, to see whether focusout even fires on a real phone's tap-driven
+        // dropdown selection at all, independent of whether the id happens to match.
+        console.log(`[diag] focusout fired: target.id=${event.target.id} tagName=${event.target.tagName} matchesTrackedControl=${searchTriggeringControls.includes(event.target.id)} trackedControls=${JSON.stringify(searchTriggeringControls)}`);
+
         if (searchTriggeringControls.includes(event.target.id)) {
             console.log(`input changed: ${event.target.id}`);
             setTimeout(searchFunction, 300); // crappy workaround to tally approach or my lack of understanding
@@ -368,6 +373,11 @@ function setupSponsorSearchTriggering(docIds, searchUrl) {
 }
 
 function refreshFamilyResults(docIds, searchUrl) {
+    // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found):
+    // unconditional entry-point marker, to tell apart "the triggering event never fired" from
+    // "it fired, but this function's own later gating/logic never actually re-rendered."
+    console.log('[diag] refreshFamilyResults() invoked');
+
     const searchInputs = Object.keys(docIds.search).map((key) => {
         return docIds.search[key]
     });
@@ -420,6 +430,11 @@ function refreshFamilyResults(docIds, searchUrl) {
             searchCriteria[key.slice("Search".length)] = translateSearchValue(getSearchControlValue(docIds.search[key]));
         }
 
+        // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found):
+        // unconditional full criteria dump - the logStrs line above only shows *changed* values,
+        // which can be misleadingly empty; this confirms exactly what's about to be filtered on.
+        console.log(`[diag] searchCriteria=${JSON.stringify(searchCriteria)}`);
+
         window.dispatchEvent(new CustomEvent("F4F.ClientFamilySearch", {detail: searchCriteria}));
 
         if (gConfigData.hasOwnProperty("AllowSignUpOfPreviouslySponsored") && gConfigData.AllowSignUpOfPreviouslySponsored === false) {
@@ -435,7 +450,10 @@ function refreshFamilyResults(docIds, searchUrl) {
                 console.log("family cache not yet loaded; ignoring search trigger");
                 return;
             }
-            renderFamilyResults( applySearchCriteria(gClientFamilyCache, searchCriteria) );
+            // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found)
+            const matchedForDiag = applySearchCriteria(gClientFamilyCache, searchCriteria);
+            console.log(`[diag] applySearchCriteria matched ${matchedForDiag.length} of ${gClientFamilyCache.length} cached rows`);
+            renderFamilyResults( matchedForDiag );
         } else {
             fetchClientFamilyByCriteria(searchUrl, searchCriteria, renderFamilyResults);
         }
