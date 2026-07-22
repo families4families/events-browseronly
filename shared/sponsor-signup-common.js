@@ -333,19 +333,14 @@ function getInputSearchIDs(docIds) {
 
 function setupInputSearchTriggering(docIds, searchFunction) {
     // (note: this is to avoid inserting a React app into the page - i.e. keep it as simple as possible)
-    // weird that tally controls aren't throwing input events
-    // delegated on body (native 'blur' doesn't bubble, so 'focusout' - its bubbling equivalent -
-    // is what makes delegation possible at all) rather than bound to specific elements: these
-    // controls are hidden/shown and get recreated by React (Tally), so any reference captured
-    // once would go stale - re-checking event.target.id against the current control list on
-    // every event is what makes this survive Tally re-rendering the DOM underneath it.
-    document.body.addEventListener('focusout', function (event) {
+    // Confirmed via PostHog session replay (real mobile Safari, not desktop/emulated testing):
+    // 'focusout'/'blur' never fires at all on a real phone's tap-driven selection of Tally's
+    // custom dropdown - not even the previous diagnostic log that ran unconditionally on every
+    // focusout. 'change' does fire reliably (confirmed via PostHog's own autocapture, which
+    // caught real 'change' events on this exact control on the same device) and bubbles
+    // natively, so body-delegation needs no special capture-phase handling either.
+    document.body.addEventListener('change', function (event) {
         let searchTriggeringControls = getInputSearchIDs(docIds);
-
-        // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found):
-        // unconditional, to see whether focusout even fires on a real phone's tap-driven
-        // dropdown selection at all, independent of whether the id happens to match.
-        console.log(`[diag] focusout fired: target.id=${event.target.id} tagName=${event.target.tagName} matchesTrackedControl=${searchTriggeringControls.includes(event.target.id)} trackedControls=${JSON.stringify(searchTriggeringControls)}`);
 
         if (searchTriggeringControls.includes(event.target.id)) {
             console.log(`input changed: ${event.target.id}`);
@@ -373,11 +368,6 @@ function setupSponsorSearchTriggering(docIds, searchUrl) {
 }
 
 function refreshFamilyResults(docIds, searchUrl) {
-    // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found):
-    // unconditional entry-point marker, to tell apart "the triggering event never fired" from
-    // "it fired, but this function's own later gating/logic never actually re-rendered."
-    console.log('[diag] refreshFamilyResults() invoked');
-
     const searchInputs = Object.keys(docIds.search).map((key) => {
         return docIds.search[key]
     });
@@ -430,11 +420,6 @@ function refreshFamilyResults(docIds, searchUrl) {
             searchCriteria[key.slice("Search".length)] = translateSearchValue(getSearchControlValue(docIds.search[key]));
         }
 
-        // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found):
-        // unconditional full criteria dump - the logStrs line above only shows *changed* values,
-        // which can be misleadingly empty; this confirms exactly what's about to be filtered on.
-        console.log(`[diag] searchCriteria=${JSON.stringify(searchCriteria)}`);
-
         window.dispatchEvent(new CustomEvent("F4F.ClientFamilySearch", {detail: searchCriteria}));
 
         if (gConfigData.hasOwnProperty("AllowSignUpOfPreviouslySponsored") && gConfigData.AllowSignUpOfPreviouslySponsored === false) {
@@ -450,10 +435,7 @@ function refreshFamilyResults(docIds, searchUrl) {
                 console.log("family cache not yet loaded; ignoring search trigger");
                 return;
             }
-            // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found)
-            const matchedForDiag = applySearchCriteria(gClientFamilyCache, searchCriteria);
-            console.log(`[diag] applySearchCriteria matched ${matchedForDiag.length} of ${gClientFamilyCache.length} cached rows`);
-            renderFamilyResults( matchedForDiag );
+            renderFamilyResults( applySearchCriteria(gClientFamilyCache, searchCriteria) );
         } else {
             fetchClientFamilyByCriteria(searchUrl, searchCriteria, renderFamilyResults);
         }

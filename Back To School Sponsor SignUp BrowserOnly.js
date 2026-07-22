@@ -611,15 +611,15 @@
 
     function setupInputSearchTriggering(searchFunction) {
         // (note: this is to avoid inserting a React app into the page - i.e. keep it as simple as possible)
-        // weird that tally controls aren't throwing input events
-        jQuery('body').on('blur', 'input', function (event) {
+        // Confirmed via PostHog session replay (real mobile Safari, not desktop/emulated testing):
+        // 'blur'/'focusout' never fires at all on a real phone's tap-driven selection of Tally's
+        // custom dropdown - not even an unconditional diagnostic log that ran on every blur.
+        // 'change' does fire reliably (confirmed via PostHog's own autocapture, which caught real
+        // 'change' events on this exact control on the same device) and bubbles natively, so
+        // jQuery's delegation needs no special handling for it either.
+        jQuery('body').on('change', 'input', function (event) {
             // because these controls are hidden/shown ... they can get recreated by React (Tally) and so references must be re-bound to ensure test below will succeed
             let searchTriggeringControls = getInputSearchIDs();
-
-            // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found):
-            // unconditional, to see whether this blur/focusout delegation even fires on a real
-            // phone's tap-driven dropdown selection at all, independent of whether the id matches.
-            console.log(`[diag] blur fired: target.id=${event.target.id} tagName=${event.target.tagName} matchesTrackedControl=${searchTriggeringControls.includes(event.target.id)} trackedControls=${JSON.stringify(searchTriggeringControls)}`);
 
             if (searchTriggeringControls.includes(event.target.id)) {
                 console.log(`input changed: ${event.target.id}`);
@@ -648,11 +648,6 @@
     const gLastSearchInputs = {};
 
     function refreshFamilyResults() {
-        // TEMPORARY DIAGNOSTIC (2026-07-22, remove once the mobile stale-results bug is found):
-        // unconditional entry-point marker, to tell apart "the triggering event never fired" from
-        // "it fired, but this function's own later gating/logic never actually re-rendered."
-        console.log('[diag] refreshFamilyResults() invoked');
-
         //const searchInputs = [DocIDs.search.SearchClientFamilySize, DocIDs.search.SearchClientDietaryRestrictions];
         const searchInputs = Object.keys(DocIDs.search).map((key) => {
             return DocIDs.search[key]
