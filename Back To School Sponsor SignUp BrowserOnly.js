@@ -880,7 +880,7 @@
             jQuery(btn).removeAttr('disabled').attr('style', 'width:100%;box-sizing:border-box;opacity:1;');
             if (innerSpan) innerSpan.style.removeProperty('color');
             if (innerIcon) innerIcon.style.removeProperty('color');
-            caption.textContent = '✓ Ready to submit';
+            caption.textContent = '\u2713 Ready to submit';
             caption.style.color = '#3B6D11';
         } else {
             // Dimmed fill (matching the border/text colors already used for an unselected family

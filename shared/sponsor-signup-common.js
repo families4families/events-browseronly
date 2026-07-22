@@ -540,7 +540,12 @@ function updateFormSubmitState(enabled) {
         btn.setAttribute('style', 'width:100%;box-sizing:border-box;opacity:1;');
         if (innerSpan) innerSpan.style.removeProperty('color');
         if (innerIcon) innerIcon.style.removeProperty('color');
-        caption.textContent = '✓ Ready to submit';
+        // Checkmark written as a JS unicode escape, not a literal character - a raw
+        // multi-byte UTF-8 character here got mangled into mojibake somewhere in the
+        // clipboard/Tally paste pipeline (confirmed live: source bytes were correct UTF-8, so
+        // this was a paste artifact, not a code bug). The escape is plain ASCII in the source, so
+        // it survives any paste channel intact and produces the identical character at runtime.
+        caption.textContent = '\u2713 Ready to submit';
         caption.style.color = '#3B6D11';
     } else {
         btn.setAttribute('disabled', 'disabled');
