@@ -105,6 +105,11 @@
                     [`FMAge${i}`]: getRFieldValue(fields, `Age`, i),
                     [`FMGender${i}`]: getRFieldValue(fields, `Gender`, i),
                     [`FMGrade${i}`]: getRFieldValue(fields, `Grade`, i),
+                    /** BTS 2026 sizing fields **/
+                    [`FMSchoolName${i}`]: getRFieldValue(fields, `SchoolName`, i),
+                    [`FMShirt${i}`]: getRFieldValue(fields, `Shirt`, i),
+                    [`FMPant${i}`]: getRFieldValue(fields, `Pant`, i),
+                    [`FMShoeSize${i}`]: getRFieldValue(fields, `ShoeSize`, i),
                     //[`FMComments${i}`]: getRFieldValue(fields, `FMComments`, i),
                 };
 
