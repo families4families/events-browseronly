@@ -361,10 +361,6 @@ function setupInputSearchTriggering(docIds, searchFunction) {
 // it - each platform ends up using whichever signal actually fires for it.
 function setupMutationObserverTriggering(docIds, searchFunction) {
     let debounceTimer = null;
-    const scheduleRefresh = () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(searchFunction, 300);
-    };
 
     getInputSearchIDs(docIds).forEach((ctrlId) => {
         const ctrl = document.getElementById(ctrlId);
@@ -373,8 +369,22 @@ function setupMutationObserverTriggering(docIds, searchFunction) {
             console.error(`could not find .tally-block wrapper for search control ${ctrlId} - mutation-based triggering skipped for it`);
             return;
         }
-        new MutationObserver(scheduleRefresh)
-            .observe(wrapper, {childList: true, subtree: true, attributes: true, characterData: true});
+
+        // Opening/closing the dropdown mutates the DOM just as much as an actual selection does,
+        // so without this check every open+close would also schedule a redundant refresh. Only
+        // reschedule when this control's own value has genuinely changed since the last mutation
+        // we looked at, so a mutation with no real value change (e.g. just opening the list) is a
+        // no-op instead of an extra unnecessary re-render.
+        let lastKnownValue = ctrl.value;
+        new MutationObserver(() => {
+            const currentCtrl = document.getElementById(ctrlId);
+            const currentValue = currentCtrl ? currentCtrl.value : lastKnownValue;
+            if (currentValue !== lastKnownValue) {
+                lastKnownValue = currentValue;
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(searchFunction, 300);
+            }
+        }).observe(wrapper, {childList: true, subtree: true, attributes: true, characterData: true});
     });
 }
 
