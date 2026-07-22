@@ -52,6 +52,57 @@ function ready(fn) {
     document.addEventListener('DOMContentLoaded', fn);
 }
 
+// Maps a Tally form's tallyLabel (used in the form name, e.g. "26 BTS - Client Sign-Up") to
+// the internal eventName used everywhere else (sheet tabs, apiBase paths, etc). Mirrors the
+// tallyLabel convention the Apps Script "Setup Event" wizard uses when creating forms
+// (F4F_SpreadsheetAutomation.gs) - "Thanks"/"Holiday" instead of "Thanksgiving"/"Christmas"
+// because Tally's own form-name panel can't be resized (long names don't fit) and "Holiday"
+// avoids assuming every client/sponsor is Christian.
+const TALLY_LABEL_TO_EVENT_NAME = {
+    'BTS': 'BTS',
+    'Thanks': 'Thanksgiving',
+    'Holiday': 'Christmas',
+};
+
+/**
+ * Detects which event and Client/Sponsor variant this page is by reading the Tally form's
+ * internal name out of the page's embedded __NEXT_DATA__ (present in Tally's server-rendered
+ * HTML, so it's readable before any client-side hydration finishes). Throws - rather than
+ * guessing - if the form isn't named per the "<2-digit-year> <tallyLabel> - <Client|Sponsor>
+ * Sign-Up" convention, or if it doesn't match expectedVariant: either case means this script is
+ * loaded on the wrong form, which needs a human to fix, not a silent fallback.
+ */
+function detectEventInfo(expectedVariant) {
+    const nextDataTag = document.getElementById('__NEXT_DATA__');
+    if (!nextDataTag) {
+        throw new Error('detectEventInfo: could not find Tally\'s __NEXT_DATA__ script tag on this page');
+    }
+
+    let formName;
+    try {
+        formName = JSON.parse(nextDataTag.textContent).props.pageProps.name;
+    } catch (e) {
+        throw new Error(`detectEventInfo: failed to parse __NEXT_DATA__ (${e.message})`);
+    }
+
+    const match = /^\d{2}\s+(.+?)\s+-\s+(Client|Sponsor)\s+Sign-Up$/.exec(formName || '');
+    if (!match) {
+        throw new Error(`detectEventInfo: form name "${formName}" does not match the "<year> <label> - <Client|Sponsor> Sign-Up" convention`);
+    }
+
+    const [, tallyLabel, variant] = match;
+    if (expectedVariant && variant !== expectedVariant) {
+        throw new Error(`detectEventInfo: this is a "${variant}" form ("${formName}") but ${expectedVariant.toLowerCase()}-signup-common.js was loaded`);
+    }
+
+    const eventName = TALLY_LABEL_TO_EVENT_NAME[tallyLabel];
+    if (!eventName) {
+        throw new Error(`detectEventInfo: unrecognized tallyLabel "${tallyLabel}" in form name "${formName}"`);
+    }
+
+    return { eventName, eventYear: new Date().getFullYear(), variant };
+}
+
 /**
  * get a field's value that only appears once on the form
  */

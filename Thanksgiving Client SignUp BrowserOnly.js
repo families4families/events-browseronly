@@ -6,9 +6,7 @@
 
 <script type="text/javascript">
 
-    /** todo: read the sheet tab name (or the event name & year) from the form **/
-    const eventName = 'Thanksgiving';
-    const eventYear = new Date().getFullYear();
+    const { eventName, eventYear } = detectEventInfo('Client');
     // f4fevents backend (replaces sheet.best) - see families4families/f4fevents on GitHub
     const apiBase = `https://f4feventsserver-539935395831.us-east1.run.app`;
     const searchUrl = `${apiBase}/${eventName}/${eventYear}`;
