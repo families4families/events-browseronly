@@ -103,6 +103,25 @@ function detectEventInfo(expectedVariant) {
     return { eventName, eventYear: new Date().getFullYear(), variant };
 }
 
+// detectEventInfo() throws if Tally's __NEXT_DATA__ tag isn't in the DOM yet - confirmed live
+// (2026-07-22) that even after document.readyState reaches "complete", this tag can still be
+// transiently missing (Tally appears to remount/re-render around when the page settles), so a
+// single readyState check is not enough - retry for a while instead of giving up on the first
+// attempt.
+async function waitForDetectEventInfo(expectedVariant, timeoutMs = 10000, intervalMs = 150) {
+    const start = Date.now();
+    let lastError;
+    while (Date.now() - start < timeoutMs) {
+        try {
+            return detectEventInfo(expectedVariant);
+        } catch (e) {
+            lastError = e;
+            await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        }
+    }
+    throw lastError || new Error('detectEventInfo() timed out waiting for __NEXT_DATA__');
+}
+
 /**
  * get a field's value that only appears once on the form
  */
