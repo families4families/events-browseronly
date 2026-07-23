@@ -423,12 +423,13 @@ function getInputSearchIDs(docIds) {
 
 function setupInputSearchTriggering(docIds, searchFunction) {
     // (note: this is to avoid inserting a React app into the page - i.e. keep it as simple as possible)
-    // Reverted back to 'focusout' (native equivalent of delegated 'blur') after direct,
-    // unfiltered console verification in real desktop Safari (2026-07-22): blur/focusout DO fire
-    // reliably on this control, with the fully-updated value by the second firing per selection -
-    // 'change' never fires at all for this widget. An earlier attempt to switch to 'change' was
-    // based on an AI-summarized reading of a mobile replay's console tab that turned out to be
-    // unreliable - don't trust that method again; read the raw console output directly.
+    // blur/focusout DO fire reliably on this control, with the fully-updated value by the second
+    // firing per selection - 'change' never fires at all for this widget. Confirmed on desktop
+    // Safari 2026-07-22; a since-fixed Tally regression meant it didn't fire on mobile Safari for
+    // a while (worked around at the time with a MutationObserver watching the control's DOM
+    // subtree directly - see git history if that's ever needed again), but Tally confirmed and
+    // fixed the regression, and re-verified directly via mobile Safari's own remote Web Inspector
+    // console (2026-07-23): blur/focusout fires there too now, so the workaround is gone.
     document.body.addEventListener('focusout', function (event) {
         let searchTriggeringControls = getInputSearchIDs(docIds);
 
@@ -436,45 +437,6 @@ function setupInputSearchTriggering(docIds, searchFunction) {
             console.log(`input changed: ${event.target.id}`);
             setTimeout(searchFunction, 300); // crappy workaround to tally approach or my lack of understanding
         }
-    });
-}
-
-// Confirmed via direct testing (2026-07-22) that on real mobile Safari, Tally's dropdown widget
-// never fires blur/focusout/change/input at all when a selection is made (broad event logging
-// showed only pointer/touch/click on the control itself, never on an actual value change) - yet
-// setupInputSearchTriggering's blur/focusout listener above IS confirmed working on desktop
-// Safari. Rather than chase whichever single DOM event this widget's mobile variant may or may
-// not bother to dispatch, this observes the control's own DOM subtree directly: showing a new
-// selection necessarily mutates *something* in there (confirmed: 8 real mutations recorded for
-// one selection, on a wrapper div under Tally's own stable `.tally-block` class), regardless of
-// which event (if any) accompanies it. This runs alongside the existing listener, not instead of
-// it - each platform ends up using whichever signal actually fires for it.
-function setupMutationObserverTriggering(docIds, searchFunction) {
-    let debounceTimer = null;
-
-    getInputSearchIDs(docIds).forEach((ctrlId) => {
-        const ctrl = document.getElementById(ctrlId);
-        const wrapper = ctrl ? ctrl.closest('.tally-block') : null;
-        if (!wrapper) {
-            console.error(`could not find .tally-block wrapper for search control ${ctrlId} - mutation-based triggering skipped for it`);
-            return;
-        }
-
-        // Opening/closing the dropdown mutates the DOM just as much as an actual selection does,
-        // so without this check every open+close would also schedule a redundant refresh. Only
-        // reschedule when this control's own value has genuinely changed since the last mutation
-        // we looked at, so a mutation with no real value change (e.g. just opening the list) is a
-        // no-op instead of an extra unnecessary re-render.
-        let lastKnownValue = ctrl.value;
-        new MutationObserver(() => {
-            const currentCtrl = document.getElementById(ctrlId);
-            const currentValue = currentCtrl ? currentCtrl.value : lastKnownValue;
-            if (currentValue !== lastKnownValue) {
-                lastKnownValue = currentValue;
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(searchFunction, 300);
-            }
-        }).observe(wrapper, {childList: true, subtree: true, attributes: true, characterData: true});
     });
 }
 
@@ -1022,7 +984,6 @@ function initSponsorSignup(docIds, searchUrl) {
         await fetchEventConfiguration(searchUrl);
 
         setupInputSearchTriggering(docIds, () => refreshFamilyResults(docIds, searchUrl));
-        setupMutationObserverTriggering(docIds, () => refreshFamilyResults(docIds, searchUrl));
         setupSponsorSearchTriggering(docIds, searchUrl);
 
         // ensure that we have the search results placeholder div
