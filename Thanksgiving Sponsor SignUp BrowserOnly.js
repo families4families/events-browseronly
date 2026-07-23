@@ -45,7 +45,7 @@
         <div id='{{F4FNumber}}' class="f4f-client-card f4f-client-unselected">
             <div class="f4f-card-header">
                 <span class="f4f-family-name"><svg class="f4f-selected-check" viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6l-1.3-1.3a1 1 0 10-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clip-rule="evenodd"></path></svg>{{ClientFirstName}}'s family</span>
-                <span class="f4f-member-count">{{ClientFamilyMemberCount}} people</span>
+                <span class="f4f-member-count">{{ClientFamilyMemberCountLabel}}</span>
             </div>
             <div class="f4f-family-details" data-f4f-number="{{F4FNumber}}">
                 <div class="f4f-detail-row"><span class="f4f-detail-label">Family</span><span class="f4f-detail-value">{{ClientFamilyCompositionDescription}}</span></div>
@@ -159,6 +159,9 @@
         const composition = describeFamilyComposition(tree.ClientAdultCount, tree.ClientChildAges);
         tree["ClientFamilyCompositionDescription"] = composition.text;
         tree["ClientFamilyMemberCount"] = composition.totalPeople;
+        // Mustache has no built-in pluralization - precompute the full label here (same pattern
+        // as FMGenderClass in the BTS file) rather than always saying "N people".
+        tree["ClientFamilyMemberCountLabel"] = `${composition.totalPeople} ${composition.totalPeople === 1 ? "person" : "people"}`;
 
         tree["ClientDietaryRestrictionsDescription"] = (!tree.ClientDietaryRestrictions || tree.ClientDietaryRestrictions.length === 0 || tree.ClientDietaryRestrictions.startsWith("None") ? "None" : tree.ClientDietaryRestrictions);
         tree["ClientSpecialRequestsDescription"] = (!tree.ClientSpecialRequests || tree.ClientSpecialRequests.length === 0 ? "None" : tree.ClientSpecialRequests);

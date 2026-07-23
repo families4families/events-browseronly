@@ -213,7 +213,7 @@
         <div id='{{F4FNumber}}' class="f4f-client-card f4f-client-unselected">
             <div class="f4f-card-header">
                 <span class="f4f-family-name"><svg class="f4f-selected-check" viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6l-1.3-1.3a1 1 0 10-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clip-rule="evenodd"></path></svg>{{ClientFirstName}}'s Family</span>
-                <span class="f4f-member-count">{{FamilyMembers.length}} members</span>
+                <span class="f4f-member-count">{{MemberCountLabel}}</span>
             </div>
             <div class="f4f-family-members" data-f4f-number="{{F4FNumber}}">
                 {{#FamilyMembers}}
@@ -1033,6 +1033,9 @@
         tree.FamilyMembers = (row.FamilyMembers || []).map((member) => {
             return Object.assign({}, member, { FMGenderClass: genderIconClass(member.FMGender) });
         });
+        // Mustache has no built-in pluralization - precompute the full label here instead of
+        // always saying "N members".
+        tree.MemberCountLabel = `${tree.FamilyMembers.length} ${tree.FamilyMembers.length === 1 ? "member" : "members"}`;
         return tree;
     }
 
