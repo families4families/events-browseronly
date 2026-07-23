@@ -256,6 +256,49 @@ function getFieldValues(fields, label) {
     return values.join("||");
 }
 
+// Tally used to render each field's internal name (e.g. "SponsorPreviousFamilyYN") as hidden
+// text inside its choice/dropdown block, letting DocIDs binding scrape its way to the right
+// element before matching on the visible label. Tally has since dropped that hidden text
+// entirely (confirmed live, 2026-07-22 - no fieldName marker anywhere in the DOM, and the
+// radio/dropdown inputs' aria-describedby is null), which broke this in production on BTS
+// originally, then again on Christmas when its Holiday Party question turned out to share
+// identical "Yes"/"No" wording with its own sponsor-search gate question - matching on visible
+// label text alone can't tell two same-labeled questions apart, no matter how it's scoped.
+//
+// The field's internal name is still there, though - just moved. Tally's own __NEXT_DATA__
+// payload (props.pageProps.blocks) carries every block's payload.name (the internal field name)
+// and payload.text (its visible option text, for choice/dropdown options), keyed by a uuid that
+// matches this block's own DOM class (tally-block-<uuid>) - a direct, unambiguous identity
+// match pulled from Tally's own authoritative data, not a text-matching heuristic at all.
+//
+// DROPDOWN_OPTION blocks share one groupUuid across all their options - that groupUuid is what
+// the actual <select>/combobox DOM element binds to (there's one input per dropdown, not per
+// option), so field-name matching alone is enough. MULTIPLE_CHOICE_OPTION blocks bind
+// individually - each option (Yes/No/etc) is its own DOM element - so matching also requires
+// the specific option's visible text via optionText.
+function findTallyBlockElement(fieldName, optionText) {
+    const nextDataTag = document.getElementById('__NEXT_DATA__');
+    if (!nextDataTag) {
+        return null;
+    }
+
+    let blocks;
+    try {
+        blocks = JSON.parse(nextDataTag.textContent).props.pageProps.blocks;
+    } catch (e) {
+        return null;
+    }
+
+    const match = blocks.find((b) => b.payload && b.payload.name === fieldName
+        && (optionText === undefined || b.payload.text === optionText));
+    if (!match) {
+        return null;
+    }
+
+    const blockUuid = match.groupType === 'DROPDOWN' ? match.groupUuid : match.uuid;
+    return document.querySelector(`.tally-block-${blockUuid} input, .tally-block-${blockUuid} [role="combobox"]`);
+}
+
 /**
  * DocIDs.initialize()'s actual implementation, extracted as a free function so it's defined
  * once here rather than copied into every event's DocIDs object. The per-event DocIDs object
@@ -292,54 +335,17 @@ function docIdsInitialize(root, node) {
             // handle drop downs
             // 1. search for the <label>[LabelContent]</label> and extract inputId from the for=<inputId> attribute
             if (root.meta[key] && root.meta[key].type === "DROPDOWN") {
-                let labels = document.querySelectorAll("label");
-                let dropdownLabel = [].filter.call(labels, function (label) {
-                    return label.innerHTML === root.meta[key].labelContent;
-                });
-                if (dropdownLabel.length !== 1) {
-                    throw new Error(`could not find dropdown ${root.meta[key].labelContent}`);
+                const input = findTallyBlockElement(key, undefined);
+                if (!input) {
+                    throw new Error(`could not find dropdown ${root.meta[key].labelContent} (field name "${key}")`);
                 }
-                dropdownLabel = dropdownLabel[0];
-
-                if (dropdownLabel.hasAttribute("for")) {
-                    node[key] = dropdownLabel.getAttribute("for");
-                } else {
-                    throw new Error(`could not find attribute 'for' on dropdown label ${root.meta[key].labelContent}`);
-                }
+                node[key] = input.id;
             } else if (root.meta[key] && root.meta[key].type === "CHOICE-OPTION") {
-                // Tally used to render the internal field name (e.g. "SponsorPreviousFamilyYN") as
-                // hidden text inside the choice block, letting us scrape our way to the right radio
-                // group before matching on the visible label. Tally has since dropped that hidden
-                // text entirely, which broke this lookup in production on the BTS form ("could not
-                // find SponsorPreviousFamilyYN"). The visible label text is unique enough on most
-                // forms to match directly - but not always: Christmas has a second Yes/No question
-                // (Holiday Party attendance) elsewhere on the same page, so a page-wide "Yes"/"No"
-                // search can find more than one candidate. Confirmed live (2026-07-22) that Tally no
-                // longer exposes any per-question identifier near these radio groups at all (no
-                // fieldName marker, only opaque UUIDs in the input's own name attribute) - so there's
-                // no way to scope by field identity directly. When multiple candidates match, prefer
-                // the last one in document order: every DocIDs.meta CHOICE-OPTION entry that actually
-                // needs DOM binding (as opposed to "no-field-binding" sentinel fields like
-                // SponsorAttendHolidayParty, which skip this branch entirely) is the sponsor-search
-                // gate question, which by construction always sits immediately before the family
-                // search UI - i.e. last among any same-labeled candidates earlier on the page.
-                let optionChoiceLabels = document.querySelectorAll(`div.tally-block-multiple-choice-option label`);
-                let optionChoice = [].filter.call(optionChoiceLabels, function (label) {
-                    return label.innerHTML === root.meta[key].labelContent;
-                });
-                if (optionChoice.length === 0) {
+                const input = findTallyBlockElement(root.meta[key].fieldName, root.meta[key].labelContent);
+                if (!input) {
                     throw new Error(`could not find ${root.meta[key].fieldName} - ${root.meta[key].labelContent}`);
                 }
-                if (optionChoice.length > 1) {
-                    console.warn(`docIdsInitialize: ${optionChoice.length} candidates matched "${root.meta[key].labelContent}" for ${root.meta[key].fieldName} - using the last one in document order`);
-                }
-                optionChoice = optionChoice[optionChoice.length - 1];
-
-                if (optionChoice.hasAttribute("for")) {
-                    node[key] = optionChoice.getAttribute("for");
-                } else {
-                    throw new Error(`could not find attribute 'for' on option ${root.meta[key].fieldName} -> ${root.meta[key].labelContent}`);
-                }
+                node[key] = input.id;
             } else {
                 throw new Error(`could not find element with label: ${key}`);
             }
