@@ -84,14 +84,6 @@
 </script>
 <script type="text/javascript">
 
-    /*****************
-     *  CONFIGURATION
-     *****************/
-    const { eventName, eventYear } = detectEventInfo('Sponsor');
-    // f4fevents backend (replaces sheet.best) - see families4families/f4fevents on GitHub
-    const apiBase = `https://f4feventsserver-539935395831.us-east1.run.app`;
-    const searchUrl = `${apiBase}/${eventName}/${eventYear}`;
-
     /**
      * Binds to Tally form definition where PropertyName = FieldName in Tally.
      * initialize/findLabel/inputFields delegate to the shared sponsor-signup-common.js
@@ -186,7 +178,17 @@
         return tree;
     }
 
-    initSponsorSignup(DocIDs, searchUrl);
+    // detectEventInfo reads Tally's own __NEXT_DATA__ script tag - deferred to DOMContentLoaded
+    // (via ready()) since that tag can sit later in the document than this injected code, so
+    // calling detectEventInfo() at top level can run before the tag has even been parsed yet.
+    ready(function () {
+        const { eventName, eventYear } = detectEventInfo('Sponsor');
+        // f4fevents backend (replaces sheet.best) - see families4families/f4fevents on GitHub
+        const apiBase = `https://f4feventsserver-539935395831.us-east1.run.app`;
+        const searchUrl = `${apiBase}/${eventName}/${eventYear}`;
+
+        initSponsorSignup(DocIDs, searchUrl);
+    });
 
     //# sourceURL=christmas-sponsor-signup/main.js
 </script>

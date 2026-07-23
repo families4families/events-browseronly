@@ -9,12 +9,19 @@
 
 <script type="text/javascript">
 
-    const { eventName, eventYear } = detectEventInfo('Client');
-    // f4fevents backend (replaces sheet.best) - see families4families/f4fevents on GitHub
-    const apiBase = `https://f4feventsserver-539935395831.us-east1.run.app`;
-    const searchUrl = `${apiBase}/${eventName}/${eventYear}`;
+    // assigned inside ready() below, but declared here (not with const/let inside that
+    // callback) so onSubmit - a separate top-level function - can still read it via closure
+    let searchUrl;
 
+    // detectEventInfo reads Tally's own __NEXT_DATA__ script tag - deferred to DOMContentLoaded
+    // (via ready()) since that tag can sit later in the document than this injected code, so
+    // calling detectEventInfo() at top level can run before the tag has even been parsed yet.
     ready(function(){
+        const { eventName, eventYear } = detectEventInfo('Client');
+        // f4fevents backend (replaces sheet.best) - see families4families/f4fevents on GitHub
+        const apiBase = `https://f4feventsserver-539935395831.us-east1.run.app`;
+        searchUrl = `${apiBase}/${eventName}/${eventYear}`;
+
         window.addEventListener('Tally.FormSubmitted', (payload) => onSubmit(payload));
     })
 
