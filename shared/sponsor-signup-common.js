@@ -311,18 +311,32 @@ function docIdsInitialize(root, node) {
                 // hidden text inside the choice block, letting us scrape our way to the right radio
                 // group before matching on the visible label. Tally has since dropped that hidden
                 // text entirely, which broke this lookup in production on the BTS form ("could not
-                // find SponsorPreviousFamilyYN"). The visible label text is unique enough on this
-                // form to match directly, so the fieldName/legend indirection is no longer needed.
+                // find SponsorPreviousFamilyYN"). The visible label text is unique enough on most
+                // forms to match directly - but not always: Christmas has a second Yes/No question
+                // (Holiday Party attendance) elsewhere on the same page, so a page-wide "Yes"/"No"
+                // search can find more than one candidate. Confirmed live (2026-07-22) that Tally no
+                // longer exposes any per-question identifier near these radio groups at all (no
+                // fieldName marker, only opaque UUIDs in the input's own name attribute) - so there's
+                // no way to scope by field identity directly. When multiple candidates match, prefer
+                // the last one in document order: every DocIDs.meta CHOICE-OPTION entry that actually
+                // needs DOM binding (as opposed to "no-field-binding" sentinel fields like
+                // SponsorAttendHolidayParty, which skip this branch entirely) is the sponsor-search
+                // gate question, which by construction always sits immediately before the family
+                // search UI - i.e. last among any same-labeled candidates earlier on the page.
                 let optionChoiceLabels = document.querySelectorAll(`div.tally-block-multiple-choice-option label`);
                 let optionChoice = [].filter.call(optionChoiceLabels, function (label) {
                     return label.innerHTML === root.meta[key].labelContent;
                 });
-                if (optionChoice.length !== 1) {
+                if (optionChoice.length === 0) {
                     throw new Error(`could not find ${root.meta[key].fieldName} - ${root.meta[key].labelContent}`);
                 }
+                if (optionChoice.length > 1) {
+                    console.warn(`docIdsInitialize: ${optionChoice.length} candidates matched "${root.meta[key].labelContent}" for ${root.meta[key].fieldName} - using the last one in document order`);
+                }
+                optionChoice = optionChoice[optionChoice.length - 1];
 
-                if (optionChoice[0].hasAttribute("for")) {
-                    node[key] = optionChoice[0].getAttribute("for");
+                if (optionChoice.hasAttribute("for")) {
+                    node[key] = optionChoice.getAttribute("for");
                 } else {
                     throw new Error(`could not find attribute 'for' on option ${root.meta[key].fieldName} -> ${root.meta[key].labelContent}`);
                 }
