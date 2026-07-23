@@ -2,7 +2,10 @@
      init, field helpers, submit/error handling). See families4families/events-browseronly on
      GitHub. This URL never changes - it's a stable redirect (via f4fevents backend) to
      whatever git tag is currently configured, so it never needs re-pasting into Tally. -->
-<script type="text/javascript" src="https://f4feventsserver-539935395831.us-east1.run.app/scripts/client-signup-common.js"></script>
+<!-- TESTING ONLY: ?version= pins this to the refactor branch under test, bypassing the Global
+     SharedLibraryVersion every production form resolves through. Remove this query param when
+     this migration is done and ready to go through the real release/tagging process. -->
+<script type="text/javascript" src="https://f4feventsserver-539935395831.us-east1.run.app/scripts/client-signup-common.js?version=refactor/shared-library-migration"></script>
 
 <script type="text/javascript">
 

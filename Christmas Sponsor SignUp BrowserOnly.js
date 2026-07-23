@@ -2,7 +2,10 @@
      (PostHog init, DocIDs machinery, search/render/submit). See families4families/events-browseronly
      on GitHub. This URL never changes - it's a stable redirect (via f4fevents backend) to
      whatever git tag is currently configured, so it never needs re-pasting into Tally. -->
-<script type="text/javascript" src="https://f4feventsserver-539935395831.us-east1.run.app/scripts/sponsor-signup-common.js" crossorigin="anonymous"></script>
+<!-- TESTING ONLY: ?version= pins this to the refactor branch under test, bypassing the Global
+     SharedLibraryVersion every production form resolves through. Remove this query param when
+     this migration is done and ready to go through the real release/tagging process. -->
+<script type="text/javascript" src="https://f4feventsserver-539935395831.us-east1.run.app/scripts/sponsor-signup-common.js?version=refactor/shared-library-migration" crossorigin="anonymous"></script>
 
 <script type="text/javascript" src="https://unpkg.com/mustache@4.2.0"></script>
 
