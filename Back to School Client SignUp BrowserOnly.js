@@ -99,6 +99,12 @@
             }));
 
             const familyMemberCount = Number(clientData.ClientFamilyMemberSignUpCount);
+
+            // School + sizing questions only render when the referring agency is Families 4 Families,
+            // so those fields are absent from the submission for every other agency - only read them
+            // when present (string must match the referring-agency dropdown option text exactly).
+            const collectsSizing = clientData.ReferringAgency === 'Families for Families';
+
             for (let i = 1; i <= familyMemberCount; i++) {
                 const familyMemberData = {
                     [`FMName${i}`]: getRFieldValue(fields, `Name`, i),
@@ -107,6 +113,16 @@
                     [`FMGrade${i}`]: getRFieldValue(fields, `Grade`, i),
                     //[`FMComments${i}`]: getRFieldValue(fields, `FMComments`, i),
                 };
+
+                /** BTS 2026 sizing fields - on-form field NAMES are SchoolName / ShirtSize / PantSize / ShoeSize **/
+                if (collectsSizing) {
+                    Object.assign(familyMemberData, {
+                        [`FMSchoolName${i}`]: getRFieldValue(fields, `SchoolName`, i),
+                        [`FMShirt${i}`]: getRFieldValue(fields, `ShirtSize`, i),
+                        [`FMPant${i}`]: getRFieldValue(fields, `PantSize`, i),
+                        [`FMShoeSize${i}`]: getRFieldValue(fields, `ShoeSize`, i),
+                    });
+                }
 
                 Object.assign(clientData, familyMemberData);
             }
