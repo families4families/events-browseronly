@@ -117,6 +117,10 @@
                 'Content-Type': 'application/json;charset=utf-8'
             },
             body: JSON.stringify(clientData),
+            // lets the browser finish this request even if the page starts unloading right
+            // after submit (closing the tab, navigating away) - without this, a submission can
+            // be silently lost if the user leaves before the fetch would otherwise complete
+            keepalive: true,
         })
         const response = await fetch(request);
         const responseData = await response.json();

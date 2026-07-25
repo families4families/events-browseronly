@@ -1162,6 +1162,10 @@
             mode: "cors",
             headers: {"Content-Type": "application/json",},
             body: JSON.stringify(bodyData),
+            // lets the browser finish this request even if the page starts unloading right
+            // after submit (closing the tab, navigating away) - without this, a sponsorship can
+            // be silently lost if the user leaves before the fetch would otherwise complete
+            keepalive: true,
         })
             .then((r) => {
                 if (r.status === 200) {
