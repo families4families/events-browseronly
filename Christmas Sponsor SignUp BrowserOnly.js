@@ -885,7 +885,12 @@
         window.dispatchEvent(new CustomEvent("F4F.ClientFamilySearch", {detail: criteria}));
         console.log("search criteria" + JSON.stringify(criteria));
 
-        const queryParams = new URLSearchParams(criteria);
+        // the backend hides FAKE-prefixed test rows (planted directly in a live sheet for
+        // testing) from this listing by default - gConfigData.test is already populated from
+        // ?test=true on this page's own URL by fetchEventConfiguration's query-string override,
+        // so forwarding it here (the one function every criteria-building call site funnels
+        // through) is what lets a tester actually see them without duplicating this everywhere
+        const queryParams = new URLSearchParams(gConfigData.test === 'true' ? {...criteria, test: 'true'} : criteria);
         const response = await fetch(`${sheetUrl}?${queryParams}`, {
             method: "GET",
             headers: {
@@ -907,9 +912,11 @@
         window.dispatchEvent(new CustomEvent("F4F.ClientFamilySearch", {detail: criteria}));
         console.log("search criteria" + JSON.stringify(criteria));
         let clientFamilyData;
+        // same FAKE-test-row forwarding as fetchClientFamilyByCriteriaEx above
+        const requestData = gConfigData.test === 'true' ? {...criteria, test: 'true'} : criteria;
         jQuery.ajax({
             url: gEventSheetQuery,
-            data: criteria,
+            data: requestData,
             type: "GET",
             dataType: "json",
             cache: false,

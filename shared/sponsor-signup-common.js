@@ -658,7 +658,12 @@ async function fetchClientFamilyByCriteriaEx(sheetUrl, criteria) {
     window.dispatchEvent(new CustomEvent("F4F.ClientFamilySearch", {detail: criteria}));
     console.log("search criteria" + JSON.stringify(criteria));
 
-    const queryParams = new URLSearchParams(criteria);
+    // the backend hides FAKE-prefixed test rows (planted directly in a live sheet for testing)
+    // from this listing by default - gConfigData.test is already populated from ?test=true on
+    // this page's own URL by fetchEventConfiguration's query-string override, so forwarding it
+    // here (the one function every criteria-building call site funnels through) is what lets a
+    // tester actually see them without duplicating this at every call site
+    const queryParams = new URLSearchParams(gConfigData.test === 'true' ? {...criteria, test: 'true'} : criteria);
     const response = await fetch(`${sheetUrl}?${queryParams}`, {
         method: "GET",
         headers: {
@@ -683,7 +688,13 @@ function fetchClientFamilyByCriteria(sheetUrl, criteria, renderFunction) {
     // cache: 'no-store' is fetch's own no-cache instruction - unlike jQuery's {cache: false},
     // it does not append a "_=<timestamp>" query param to achieve the same thing, so this also
     // sidesteps the whole class of bug where a stray query param got treated as a search filter
-    const queryParams = new URLSearchParams(criteria);
+    //
+    // the backend hides FAKE-prefixed test rows (planted directly in a live sheet for testing)
+    // from this listing by default - gConfigData.test is already populated from ?test=true on
+    // this page's own URL by fetchEventConfiguration's query-string override, so forwarding it
+    // here (the one function every criteria-building call site funnels through) is what lets a
+    // tester actually see them without duplicating this at every call site
+    const queryParams = new URLSearchParams(gConfigData.test === 'true' ? {...criteria, test: 'true'} : criteria);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
 
