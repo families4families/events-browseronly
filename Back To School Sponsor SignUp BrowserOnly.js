@@ -1,6 +1,6 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-<script type="text/javascript" src="https://unpkg.com/mustache@4.2.0"></script>
+<script type="text/javascript" src="https://unpkg.com/mustache@4.2.0" crossorigin="anonymous"></script>
 <script>
     // PostHog error tracking + product analytics (replaces Highlight.io).
     // Loader is async and self-contained; wrapped in try/catch so any init failure
@@ -69,7 +69,7 @@
 
 <!--
 <link rel="stylesheet" href="https://rnorian.github.io/F4F/css/sponsor-signup.css">
-<script type="text/javascript" src="https://rnorian.github.io/F4F/src/modules/F4FShared.js"></script>
+<script type="text/javascript" src="https://rnorian.github.io/F4F/src/modules/F4FShared.js" crossorigin="anonymous"></script>
 -->
 <style>
     section.search-results-block {
@@ -681,6 +681,22 @@
                 // always refresh here - refreshFamilyResults() itself now safely defaults any
                 // not-yet-rendered search control to "Any" rather than needing a pre-check
                 setTimeout(refreshFamilyResults, 300);
+            }
+        });
+
+        // The 'YES' branch above only searches with whatever email is in the field at the moment
+        // the toggle is flipped - if the sponsor then edits the email afterward (e.g. fixing a
+        // typo that should now match a previous-sponsor record) and tabs out, nothing re-ran the
+        // search with the corrected value. fetchPrevSponsoredFamilies always re-reads the email
+        // field live at call time (see its own body), so just re-invoking it here is enough to
+        // pick up the edit - no need to pass the value through. Delegated on 'body' with a broad
+        // 'input' selector, matching setupInputSearchTriggering's approach above, since Tally can
+        // recreate these controls and a directly-bound listener would go stale. Only fires while
+        // 'Yes' is actually selected - editing the email while 'No' is selected (the far more
+        // common case) has nothing to do with this search and shouldn't trigger it.
+        jQuery('body').on('blur', 'input', function (event) {
+            if (event.target.id === DocIDs.SponsorEmail && prevSponsorYesCtrl && prevSponsorYesCtrl.checked) {
+                setTimeout(() => fetchPrevSponsoredFamilies({}, renderFamilyResults), 300);
             }
         });
     }
